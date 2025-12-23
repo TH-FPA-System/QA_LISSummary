@@ -262,7 +262,7 @@ async function fetchBatchData() {
 // ============================
 buildCharts(defaultTestParts.length, true);
 applyTestPartsFromUrl();
-setInterval(fetchBatchData, 5000);
+setInterval(fetchBatchData, 10000);
 
         document.getElementById("setNumChartsBtn").addEventListener("click", () => {
             let num = parseInt(document.getElementById("numChartsInput").value);
