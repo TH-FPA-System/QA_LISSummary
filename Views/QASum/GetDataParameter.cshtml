@@ -1,0 +1,475 @@
+﻿@model List<List<QA_LISSummary.Models.XY_LABEL_CHARTS_STR>>
+
+<div class="container">
+    <div class="row">
+
+        <form class="row g-3" action="@Url.Action("", "GetDataAllTestParameter")">
+
+            <div class="col-auto">
+                <input type="date" class="form-control" name="startDate" value="@ViewBag.StartDate" />
+            </div>
+            <div class="col-auto"> <label style="margin-top:6px"> : </label></div>
+            <div class="col-auto">
+                <input type="date" class="form-control" name="endDate" value="@ViewBag.EndDate" />
+
+            </div>
+            <input type="hidden" class="form-control" name="TaskNo" value="@ViewBag.TaskNo" />
+            <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
+            <div class="col-md-auto">
+
+                <select class="form-select" aria-label=".form-select" name="DropDownS">
+                    <option value="@ViewBag.DropdownS" selected>
+                        @ViewBag.PartDesc
+                        @{
+                            if (@ViewBag.DropdownS == null)
+                            {
+                                @Html.Raw("Please select part-test..");
+                            }
+                            else
+                                if (@ViewBag.DropdownS == "ALL")
+                            {
+                                @Html.Raw(" Part-Test");
+                            }
+                            else
+                            {
+                                @*@Html.Raw("(") @ViewBag.DropdownS; @Html.Raw(")")*@
+                                //@Html.Raw("Selected")
+                            }
+                        }
+
+                    </option>
+
+                    @foreach (var str in ViewBag.Part_Array)
+                    {
+                        <option value="@str.part"> @str.part_desc @Html.Raw("(") @str.part @Html.Raw(")") </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-auto">
+                <select class="form-select" aria-label=".form-select" name="DPNMarket">
+                    <option value="@ViewBag.DPNMarket" selected>
+                        @{
+                            if (@ViewBag.DPNMarket == null)
+                            {
+                                @Html.Raw("Please select market..");
+                            }
+                            else
+                                if (@ViewBag.DPNMarket == "ALL")
+                            {
+                                @ViewBag.DPNMarket;
+                                @Html.Raw(" Market");
+                            }
+                            else
+                            {
+                                @ViewBag.DPNMarket;
+                            }
+                        }
+                    </option>
+                    <option value="ALL"> ALL </option>
+                    @foreach (var str in ViewBag.Part_Markets)
+                    {
+                        <option value="@str.PropertyValue"> @str.PropertyValue </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-auto"> <button type="submit" class="btn btn-dark">OK</button> </div>
+        </form>
+
+
+
+        <div class="mt-3">
+            <div class="ms-0 row mb-2">
+
+
+                <div class="card-body pt-1 pb-0">
+                    <div class="row">
+
+                        <text>
+
+                            <div class="col-2 p-1 border border-1 rounded-1 position-relative bg-white d-flex flex-column" style="width: 1500px; margin: .08em .08em; min-height: 650px;">
+
+
+                                <div id="@string.Concat("chart-live", "CH1")" class="flex-grow-1"></div>
+
+                            </div>
+                        </text>
+
+                    </div>
+                </div>
+                @{
+
+                    if (ViewBag.UNIT2 != null)
+                    {
+                        <div class="card-body pt-1 pb-0">
+                            <div class="row">
+
+                                <text>
+
+                                    <div class="col-2 p-1 border border-1 rounded-1 position-relative bg-white d-flex flex-column" style="width: 700px; margin: .08em .08em; min-height: 480px;">
+
+
+                                        <div id="@string.Concat("chart-live", "CH2")" class="flex-grow-1"></div>
+
+                                    </div>
+                                </text>
+
+                            </div>
+                        </div>
+                    }
+
+                }
+
+            </div>
+
+
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="row">
+
+        <div class="col-md-auto">
+
+            <label> ALL</label>
+            <table class="table table-bordered" style="width:300px;">
+                <thead>
+
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row" style="color:#808080;">STDV</th>
+                        <td>@ViewBag.STDV</td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#808080;">LSL</th>
+                        <td>@ViewBag.LowerLim</td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#808080;">USL</th>
+                        <td>@ViewBag.UpperLim</td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#808080;">AVG</th>
+                        <td>@ViewBag.AVGX</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#808080;">SAMPLES</th>
+
+                        <td>@ViewBag.SAMPLES</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#808080;">CP</th>
+
+                        <td>@ViewBag.CP </td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#808080;">CPU</th>
+
+                        <td>@ViewBag.CPU</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#808080;">CPL</th>
+                        <td>@ViewBag.CPL</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="color:#808080;">CPK</th>
+                        <td>@ViewBag.CPK</td>
+                    </tr>
+
+            </table>
+        </div>
+    </div>
+</div>
+@section scripts {
+    <script>
+        var eventsxx;
+
+
+
+
+
+
+
+        @*var events =@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model, Newtonsoft.Json.Formatting.Indented));*@
+        var events = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model, Newtonsoft.Json.Formatting.Indented));
+        var DataQuery1 = events[0];
+        var LabelS = events[1];
+        var DataQuery2 = events[2];
+        var DataQuery3 = events[3];
+
+        //$(function () {
+        //    $.ajax({
+        //        type: "POST",
+        //        url: "QASum/GetSubCharts?startDate=2024-08-20&endDate=2024-08-21&DropDownS=595130",
+        //        data: {
+        //        },
+        //        contentType: "application/json; charset=utf-8",
+        //        dataType: "json",
+        //        success: function (chapters) {
+        //            eventsxx = chapters;
+        //            console.log("AJ");
+        //            console.log(eventsxx);
+
+        //        }
+        //    });
+        //});
+
+        //console.log("MD");
+        //console.log(DataQuery1);
+
+        let chartW = '100%';
+        let chartH = '100%';
+        let chartOptions = {
+
+            "caption": " @ViewBag.Selected @ViewBag.PartDesc @{ string year = @ViewBag.EndDate; }   @*@Html.Raw(year.Substring(0, 4))*@",
+            "yaxisname": "@ViewBag.UNIT1",
+            "xaxisname": "Year : @Html.Raw(year.Substring(0, 4))",
+
+            @{
+
+
+                double lowScA = Convert.ToDouble(ViewBag.LowerLim);
+                double upScA = Convert.ToDouble(ViewBag.UpperLim);
+                double lowSc = lowScA - (lowScA / 10);
+                double upSc = upScA + (upScA / 10);
+
+             }
+            "yaxisminvalue": "@Html.Raw(lowSc.ToString())",
+            "yaxismaxvalue": "@Html.Raw(upSc.ToString())",
+            @{
+                String UNIT = ViewBag.UNIT1;
+                if (ViewBag.UNIT2 != null)
+                {
+                    UNIT = "";
+                }
+            }
+            "plotToolText": "Result: $yValue @Html.Raw(UNIT) <br> Date Tested: $xValue",
+            "valueFontColor": "#000000",
+            "valueBgColor": "#FFFFFF",
+            "valueBgAlpha": "50",
+            xAxisLabelMode: "CATEGORIES",
+            "labelDisplay": "rotate",
+            "canvasPadding": "90",
+            "slantLabel": "1",
+            "theme": "fusion"
+        };
+
+        FusionCharts.ready(function () {
+            let chartLiveDataObjs = [];
+
+            chartLiveDataObjs.push(new FusionCharts({
+                type: 'zoomscatter',
+
+                renderAt: '@string.Concat("chart-live", "CH1")',
+                width: chartW, height: chartH,
+                showChartLoadingMessage: false,
+                dataFormat: 'json',
+
+                dataSource: {
+                    chart: chartOptions,
+                    "categories": [
+                        {
+                            "verticalLineDashed": "1",
+                            "verticalLineDashLen": "1",
+                            "verticalLineDashGap": "1",
+                            "verticalLineThickness": "1",
+                            "verticalLineColor": "#000000",
+
+                            "category": LabelS
+
+                        }
+
+                    ],
+                    "dataset": [
+                        {
+                            // "drawline": "1",
+                            "seriesname": "@ViewBag.PartDesc",
+                            "color": "0075c2",
+                            "anchorsides": "3",
+                            "anchorradius": "3",
+                            "anchorbgcolor": "0075c2",
+                            "anchorbordercolor": "0075c2",
+                            "data": DataQuery1
+                           // "data": eventsxx
+
+
+                        },
+                        {
+
+               //     "seriesname":  "@ViewBag.UNIT2",
+                    //"color": "0075c2",
+                //    "anchorsides": "3",
+                //    "anchorradius": "3",
+                    //"anchorbgcolor": "0075c2",
+                    //"anchorbordercolor": "0075c2",
+                //    "data": DataQuery2
+
+                    }
+
+                ],
+
+
+                "vtrendlines": [
+                    {
+                        "line": [
+
+                            {
+                               // "startvalue": "1",
+                               // "endvalue": "31",
+                                "alpha": "15",
+                                "color": "00FF00"
+                            }
+                        ]
+                    }
+                ],
+                "trendlines": [
+                    {
+                        "line": [
+                            {
+                                "startvalue": "@ViewBag.LowerLim",
+                                "displayvalue": "Lower @ViewBag.LowerLim",
+                                "linethickness": "2",
+                                "color": "FF0000",
+                                "valueonright": "1",
+                                "dashed": "1",
+                                "dashgap": "5"
+                            },
+                            {
+                                "startvalue": "@ViewBag.UpperLim",
+                                "displayvalue": "Upper @ViewBag.UpperLim",
+                                "linethickness": "2",
+                                "color": "FF0000",
+                                "valueonright": "1",
+                                "dashed": "1",
+                                "dashgap": "5"
+                            }
+                        ]
+                    }
+                    ]
+
+               }}));
+
+
+            chartLiveDataObjs.forEach((e) => e.render());
+
+
+        });
+
+        let chartW2 = '100%';
+        let chartH2 = '100%';
+        let chartOptions2 = {
+
+            "caption": "Sub : @ViewBag.PartDesc @{ string year2 = @ViewBag.EndDate; } @Html.Raw(year2.Substring(0, 4))",
+            "yaxisname": "@ViewBag.UNIT2",
+            "xaxisname": "Year : @Html.Raw(year.Substring(0, 4))",
+            "yaxisminvalue": "-2",
+            "yaxismaxvalue": "2",
+            "plotToolText": "Result: $yValue @ViewBag.UNIT2 <br> Date Tested: $xValue",
+            "valueFontColor": "#000000",
+            "valueBgColor": "#FFFFFF",
+            "valueBgAlpha": "50",
+            xAxisLabelMode: "CATEGORIES",
+            "labelDisplay": "rotate",
+            "canvasPadding": "90",
+            "slantLabel": "1",
+            "theme": "fusion"
+        };
+
+        let chartLiveDataObjs2 = [];
+        if (DataQuery2 && DataQuery2 !== 'null' && DataQuery2 !== 'undefined')  //Check Sub chart not null
+        {
+        FusionCharts.ready(function () {
+            chartLiveDataObjs2.push(new FusionCharts({
+                type: 'zoomscatter',
+
+                renderAt: '@string.Concat("chart-live", "CH2")',
+                width: chartW2, height: chartH2,
+                showChartLoadingMessage: false,
+                dataFormat: 'json',
+
+                dataSource: {
+                    chart: chartOptions2,
+                    "categories": [
+                        {
+                            "verticalLineDashed": "1",
+                            "verticalLineDashLen": "1",
+                            "verticalLineDashGap": "1",
+                            "verticalLineThickness": "1",
+                            "verticalLineColor": "#000000",
+                            "category": LabelS
+
+                        }
+
+                    ],
+                    "dataset": [
+                        {
+                            // "drawline": "1",
+                            "seriesname": "@ViewBag.UNIT2",
+                            "color": "0075c2",
+                            "anchorsides": "2",
+                            "anchorradius": "2",
+                            "anchorbgcolor": "0075c2",
+                            "anchorbordercolor": "0075c2",
+                            "data": DataQuery2
+                        }
+                    ],
+
+
+                    "vtrendlines": [
+                        {
+                            "line": [
+
+                                {
+                                    // "startvalue": "1",
+                                    // "endvalue": "31",
+                                    "alpha": "15",
+                                    "color": "00FF00"
+                                }
+                            ]
+                        }
+                    ],
+                    "trendlines": [
+                        {
+                            "line": [
+                                {
+                                    "startvalue": "@ViewBag.LowerLim2",
+                                    "displayvalue": "Lower @ViewBag.LowerLim2",
+                                    "linethickness": "2",
+                                    "color": "FF0000",
+                                    "valueonright": "1",
+                                    "dashed": "1",
+                                    "dashgap": "2"
+                                },
+                                {
+                                    "startvalue": "@ViewBag.UpperLim2",
+                                    "displayvalue": "Upper @ViewBag.UpperLim2",
+                                    "linethickness": "2",
+                                    "color": "FF0000",
+                                    "valueonright": "1",
+                                    "dashed": "1",
+                                    "dashgap": "2"
+                                }
+                            ]
+                        }
+                    ]
+
+                }
+            }));
+
+
+            chartLiveDataObjs2.forEach((e) => e.render());
+
+
+        });
+
+        }
+    </script>
+
+
+}
+
+

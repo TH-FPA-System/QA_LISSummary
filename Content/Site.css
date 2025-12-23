@@ -1,0 +1,62 @@
+﻿.container, .container-fluid, .navbar {
+    min-width: 1470px;
+}
+
+nav.navbar .navbar-nav a.nav-link:hover {
+    color: #ffffff;
+}
+nav.navbar .navbar-nav a.nav-link.active:hover {
+    color: #ffffff;
+}
+nav.navbar .navbar-nav a.nav-link.active {
+    color: #c7fff8;
+}
+
+/* Set padding to keep content from hitting the edges */
+.body-content {
+    margin-top: 15px;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Override the default bootstrap behavior where horizontal description lists 
+   will truncate terms that are too long to fit in the left column 
+*/
+.dl-horizontal dt {
+    white-space: normal;
+}
+
+/* Set width on the form input elements since they're 100% wide by default */
+input,
+select,
+textarea {
+    max-width: 280px;
+}
+
+.bg-light-purple {
+    /*background-color: #f8f9fd;*/
+    background-color: #fbfbfb;
+}
+
+.container, .container-fluid {
+    min-width: 1820px !important;
+    max-width: none !important;
+}
+
+.card .card-header {
+    background-color: #f0f9ff !important;
+}
+
+.card .card-header .h-title {
+    color: #0849bb;
+}
+
+.fs-7 {
+    font-size: 1rem !important;
+}
+.fs-8 {
+    font-size: .85rem !important;
+}
+.fs-9 {
+    font-size: .75rem !important;
+}

@@ -1,0 +1,153 @@
+﻿@model IEnumerable<QA_LISSummary.Models.TEST_RESULT_DETAIL>
+<form class="row g-3" action="@Url.Action("", "ResultPartTestDetail")">
+
+    <div class="col-auto">
+        <input type="date" class="form-control" name="startDate" value="@ViewBag.StartDate" />
+    </div>
+    <div class="col-auto"> <label style="margin-top:6px"> : </label></div>
+    <div class="col-auto">
+        <input type="date" class="form-control" name="endDate" value="@ViewBag.EndDate" />
+
+    </div>
+
+    <div class="col-auto"> <input class="form-control" placeholder="Task No" value="@ViewBag.TaskNo" type="text" name="TaskNo" aria-label="default input example"> </div>
+    <div class="col-auto"> <input class="form-control" placeholder="PartTests No" value="@ViewBag.PartTestsNo" type="text" name="PartTestsNo" aria-label="default input example"> </div>
+
+    <div class="col-md-auto"> <button type="submit" class="btn btn-dark mb-lg-1">OK</button> </div>
+</form>
+
+
+
+<table id="LISITemsTestTable" class="table table-striped table-hover table-bordered nowrap">
+    <thead>
+        <tr>
+
+            <th>
+                @Html.DisplayNameFor(model => model.part)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.serial)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.task)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.test_part)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.part_desc)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.test_result)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.test_fault)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.test_status)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.run_number)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.station)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.date_tested)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var m in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => m.part)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.serial)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.task)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.test_part)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.part_desc)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.test_result)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.test_fault)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.test_status)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.run_number)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.station)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => m.date_tested)
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
+@*</text>
+            <button type="button" id="export_button" onclick="htmlTableToExcel('xlsx', 'LISITemsTestTable', 'LIS_TEST');" class="btn btn-success btn-sm">Excel Export</button>
+        </div>
+
+    </div>*@
+
+
+
+
+@section scripts {
+    <script>
+        new DataTable('#LISITemsTestTable', {
+            layout: {
+                topStart: {
+                    buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
+                }
+            },
+            scrollCollapse: true,
+            scroller: true,
+            scrollY: 500
+
+        });
+
+        //function htmlTableToExcel(_type = 'xlsx', _tableID, _fileName = 'file') {
+        //    // สร้างรูปแบบวันที่ไฟล์มาตรฐาน
+        //    let date = new Date();
+        //    let fileDate = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + (date.getDate())).slice(-2)
+        //        + '_' + ("0" + (date.getHours())).slice(-2) + ("0" + (date.getMinutes())).slice(-2) + ("0" + (date.getSeconds())).slice(-2);
+
+        //    _fileName = _fileName + fileDate;
+
+        //    //create data for worksheet
+        //    var data = document.getElementById(_tableID);
+        //    var worksheet = XLSX.utils.table_to_sheet(data);
+        //    //create workbook
+        //    const workbook = XLSX.utils.book_new();
+        //    //define workbook name and input worksheet data
+        //    XLSX.utils.book_append_sheet(workbook, worksheet, "sheet1");
+
+        //    //attemp workbook
+        //    XLSX.write(workbook, { bookType: _type, bookSST: true, type: 'base64' })
+        //    //attempt to force a client-side download
+        //    XLSX.writeFile(workbook, _fileName + '.' + _type, { compression: true, cellStyles: true });
+        //}
+
+        //===================
+
+
+
+
+    </script>
+}

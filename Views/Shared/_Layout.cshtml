@@ -1,0 +1,167 @@
+﻿@functions {
+    string ActiveStyle(string pageName) => (ViewBag.Selected == pageName) ? "background-color:steelblue;" : "";
+    string DropdownStyle(string pagePrefix) => (ViewBag.Selected != null && ViewBag.Selected.ToString().StartsWith(pagePrefix)) ? "background-color:#4682b4;" : "";
+    string SubItemStyle(string pageName) => (ViewBag.Selected == pageName) ? "background-color:#cce1f4;" : "";
+}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="~/favicon.ico" type="image/x-icon" />
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@ViewBag.Title - QA LISSummary</title>
+
+    <!-- ===== LOCAL CSS ===== -->
+    <link rel="stylesheet" href="~/Content/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/Content/dataTables.dataTables.css" />
+    <link rel="stylesheet" href="~/Content/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/Content/buttons.dataTables.min.css" />
+    <link rel="stylesheet" href="~/Content/dataTables.uikit.css" />
+    <link rel="stylesheet" href="~/Content/uikit.min.css" />
+    <link rel="stylesheet" href="~/Scripts/FusionGrid/fusiongrid.css" />
+
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        .nav-link-equal {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 180px;
+            white-space: nowrap;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body class="bg-light-purple d-flex flex-column flex-nowrap min-vh-70">
+    <br />
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar p-0 navbar-expand-lg navbar-dark bg-dark @(ViewBag.HideTitleBar == true ? "d-none" : "")">
+        <div class="container-fluid" style="height: 50px;">
+            <a class="nav-link nav-link-equal" style="height: 40px;" href="@Url.Action("", "")">
+                <img style="height:40px;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAxCAYAAACfxeZPAAAABGdBTUEAAOD8YVAtlgAAAvdpQ0NQUGhvdG9zaG9wIElDQyBwcm9maWxlAAA4y2NgYJ7g6OLkyiTAwFBQVFLkHuQYGREZpcB+noGNgZkBDBKTiwscAwJ8QOy8/LxUBlTAyMDw7RqIZGC4rAsyi4E0wJoMtBhIHwBio5TU4mQg/QWI08tLCoDijDFAtkhSNphdAGJnhwQ5A9ktDAxMPCWpFSC9DM75BZVFmekZJQqGlpaWCo4p+UmpCsGVxSWpucUKnnnJ+UUF+UWJJakpQLVQO0CA1yW/RME9MTNPwchAlYHKABSOEBYifBBiCJBcWlQGD0oGBgEGBQYDBgeGAIZEhnqGBQxHGd4wijO6MJYyrmC8xyTGFMQ0gekCszBzJPNC5jcsliwdLLdY9VhbWe+xWbJNY/vGHs6+m0OJo4vjC2ci5wUuR64t3JrcC3ikeKbyCvFO4hPmm8Yvw79YQEdgh6Cr4BWhVKEfwr0iKiJ7RcNFv4hNEjcSvyJRISkneUwqX1pa+oRMmay67C25PnkX+T8KWxULlfSU3iqvVSlQNVH9qXZQvUsjVFNJ84PWAe1JOqm6VnqCeq/0jxgsMKw1ijG2NZE3ZTZ9aXbBfKfFEssJVnXWuTZxtoF2rvbWDsaOOk5qzkouCq7ybgruyh7qnrpeJt42Pu6+wX4J/vkB9YETg5YG7wq5GPoynClCLtIqKiK6ImZm7J64BwlsibpJYckNKWtSb6ZzZFhkZmbNzb6Yy55nn19RsKnwXbF2SVbpqrI3FfqVJVW7ahhrveqm1j9s1GuqaT7bKtdW2H60U7qrqPt0r2pfY//diTaTZk/+OzV+2uEZGjP7Z32fkzD39HzzBUsXiSxuXfJtWebyeytDVp1e47J233rLDds2mWzestVk2/YdVjv373bdc3Zf2P4HB3MO/TzSfkz8+IqT1qfOnUk+++v8pIval45eSbz67/qcmza37t6pv6d8/8TDvMdiT/Y/y3wh8vLg6/y38u8ufGj6ZPr51dcF38N/Cvw69af1n+P//wANAA8013ReGAAAAAlwSFlzAAAuIgAALiIBquLdkgAAABl0RVh0U29mdHdhcmUAcGFpbnQubmV0IDQuMC4xNzNun2MAAAZGSURBVHhe7ZlrqBZVGIW1NEuKEvGHQWaR5gXLStJQiUAIrAyRyggvRBZpkvRHoiiiKFIpIyLKP10ho9IgwqLIglLDyq5GQUUSdrFAS8h7zzuu2ew5M993zslDKq0HFnvv9a6Z851zvj179kwvY4wxxhhjjDHGGGOMMcYYY4wxxhhjjDHGGGOMMcYYY4wxxhhjTI+xf//+CeimJh04cGCoYgn861SbIqsG9YvRPWgZuhWdrVIF/NGo/Fknyu5Ff0Dpo9qxeIOzekdNVSzB+Y7vmMObS3ueIl2C/KD8HLk435mKdQrZYzhmXodzXI/GU+utWCPUpyg/R1YF/FGqh86RXRDjrDZYdvj9Mv982eFPzPyRsgsYt/zeoNGKJfCGl3V+hwGyj3z4wEv5wI1Qu1KxBN4W1VbKSmDHP/75qOfg7acZq1gCe8HBRMEQ2eGPkhfMlZ2gPlm1GtTWKJbAG6hyDWpvoJMUbQu5cTqsiasU6xSyfTnXnoOHVcH/AA1StAJ+fJF/VTSy41RKYMfF5RfVv6TpI7+PxuF/RHNscQDQPyX8gNqd4dEOQzvkfUbTvwgLvCVRa4LaAsUSeHNUjnptAh2x8GGLCUIbvJsLe5JiCfyWEwRvRtQC+q+jx+iupd2LLlQsgXfIE4T+Fyj/3MsUS+ClCUL/O+W+lRXeckXbQu4MtFvHxO/0Hip/7iWKdQqHpwlCu0XHb45xQP85RSvgz1SkgPEKlSrgz1IkMgvl3aJx7X+BXZkgNLHifqzxdjRc0QReMUFog/zvEJquWALvqJ8gu2jaLu8BuXYT5D7VdqN8CY/l9VQNE3g9MUGukN0SMvkEWRwe3Vjt3pL3dRHsAmTvimMC+rfJ7hYcmk+QpbLj3CvlbZNVAf8d1f9Q+xfNySon8Hpn2W3oLPS7xo8rlsCuTBAUF7box8rfuDJSKidIXDCOkd0Sckf9BNmD4os3KUT/IkUq4LebILOjFtDfheL2pbK/yKGWJgj9NWiVVHxxRWcTZF12XGiiYgm8pgnSB62Vt7kIdgLRoWR/jmMC+nEhmKxyl+HQ2gShGxP2ZXm/FcEM7BH48YWN+nT0t/q125kAfySKi15xPrVx61W7/8fLJ8iH6ka/5cpKrZwg+1D+91+FXdzW5eAf3ROkI/g7FKmA324P0he9GPWcOAY1bbbzFaQV3d2DXKNYAi+fID+iDaj4PQL66SreDnLlFT5u0zaov5UmLigxUeO8jZvnHPL5BNmq476PsXhK0QT1h6JA+w1NrBAvaPypIjWo3R+ZEsazVapAKU2QErLBGEVqUGu5B4HjFEuQP/onCP1Yjkv9oEgF/JYTpITyBdQfQF9FNmjK4+UryIPodmm57KCzFeSZ7LhQ5WlLgNduk76aprIBbYJMfCnLTessFE/SftJ4r9rPUT8d0hKi7Tbpb9NUrvJ4J6DytmoTehi9GeOAfuNqT6k/tW0HUwc2osZbaPx8BXkFlavTJ6jx98EvV5DY09yB0v8AOz0AKMH3HgQ7HkGmL2icj/Em5dfJTuAdjj3ISlRe/f9EwxRrC/H4XbbruPnh0Y5H5aY92tqTuibI5StIPMyYg65FlceyJfhp090E9acVrUEtVpzIrJZVg3LHPcgiDWP8qGIV8P93e5Ce2KTHlSRYj55EL6F9yj+iWAKvJyZId59iLUano3LTWnuE2QqyxSNs2p1oBXo1xgH9YIaibSHeuElvBZn3lY3f9YlM5UZ8J03juwVq3Z4gNHExeE3joOlxfzlBgm49xYKNHfI3K3bkwYfryQkyHxUbyRys9TS1fyD+IU+QjlBr+x6EfrFJp70clZveZ4tgJ5CL26p02xjEOSAmWfTjFmyE4i0h0+UJQn1M5AL602QXYA3BK2/vFsmugN/tCRIebbwULW8h45b7tCIsGLfcg1Br+x6kI9S6tAc8LPDhyjei8/isXZkgbd+kU4unJwvRUnQvmkq2cQmm9p+/SaefboMYTyt9NFB2W8jFy7r4GyxBd6N4eRhf+BtQy79LDpn8TfoE2Y1QP1fnvRE1PR26Wue5TFYF/JmqXyqrBrXGN+n8vLGZX9nnMP7Xb9Ib1PZvYIwxxhhjjDHGGGOMMcYYY4wxxhhjjDHGGGOMMcYYY4wxxhhjjOkGvXr9A/23zFtQEcNnAAAAAElFTkSuQmCC" />
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse d-lg-inline-flex justify-content-between" id="navbarSupportedContent">
+                <ul class="navbar-nav flex-xxl-grow-1">
+                    <li class="nav-item"><a class="nav-link" style="@ActiveStyle("Summary By Test")" href="@Url.Action("", "")">Summary By Test</a></li>
+                    <li class="nav-item"><a class="nav-link" style="@ActiveStyle("Summary By Task")" href="@Url.Action("", "ResultTaskTest", new { startDate = DateTime.Now, endDate = DateTime.Now.AddDays(1), TaskNo = "", PartTestsNo = "" })">Summary By Task</a></li>
+                    <li class="nav-item"><a class="nav-link" style="@ActiveStyle("Test Result")" href="@Url.Action("", "ResultPartTestDetailGrid", new { startDate = DateTime.Now, endDate = DateTime.Now.AddDays(1), TaskNo = "", PartTestsNo = "" })">Test Result</a></li>
+
+                    @{
+                        var chartItems = new[] {
+                            new { Name = "DD WORKCELL", TaskNo="4390" },
+                            new { Name = "DD PACKING", TaskNo="4611" },
+                            new { Name = "CT FUNCTIONAL", TaskNo="3570" },
+                            new { Name = "REF MEASURE COLUMN REAR PLINTH", TaskNo="1205" },
+                            new { Name = "REF MEASURE COLUMN WRAPPER", TaskNo="1205" },
+                            new { Name = "OB FUNCTIONAL", TaskNo="7375" },
+                            new { Name = "RH FUNCTIONAL", TaskNo="6080" },
+                            new { Name = "FUNC BBQ", TaskNo="8040" }
+                        };
+                    }
+
+                    <!-- Capability Histogram Charts -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" style="@DropdownStyle("His-")" href="#" id="histogramDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Capability Histogram Charts
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="histogramDropdown">
+                            @foreach (var item in chartItems)
+                            {
+                                <li>
+                                    <a class="dropdown-item" style="@SubItemStyle("His-" + item.Name)"
+                                       href="@Url.Action("", "GetCapaHisto", new { startDate = DateTime.Now, endDate = DateTime.Now.AddDays(1), DropDownS="", DPNMarket="ALL", TaskNo=item.TaskNo, PageSelected="His-" + item.Name, ModelName="ALL" })">
+                                        @("His-" + item.Name)
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+
+                    <!-- Fixed Limit Control Charts -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" style="@DropdownStyle("Fix-")" href="#" id="controlDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Fixed Limit Control Charts
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="controlDropdown">
+                            @foreach (var item in chartItems)
+                            {
+                                <li>
+                                    <a class="dropdown-item" style="@SubItemStyle("Fix-" + item.Name)"
+                                       href="@Url.Action("", "GetDataAllTest", new { startDate = DateTime.Now, endDate = DateTime.Now.AddDays(1), DropDownS="ALL", DPNMarket="ALL", TaskNo=item.TaskNo, PageSelected="Fix-" + item.Name, ModelName="ALL" })">
+                                        @("Fix-" + item.Name)
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+
+                    <!-- Link Check Part-Test -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="partTestDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Link Check Part-Test</a>
+                        <ul class="dropdown-menu" aria-labelledby="partTestDropdown">
+                            <li><a class="dropdown-item" target="_blank" href="http://tiger/LIS_ITEM/ItemCheck/GETPTBYCATASK?">Part Test</a></li>
+                            <li><a class="dropdown-item" target="_blank" href="http://tiger/LIS_ITEM/ItemCheck/GETPTBYCATASKBOM">Part Test(BOM Template)</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="container-fluid body-content pt-0 mt-0 mb-2 flex-grow-1">
+        @RenderBody()
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="container-fluid @(ViewBag.HideFooter == true ? "d-none" : "")">
+        <hr />
+        <p>&copy; @DateTime.Now.Year Fisher&Paykel Appliances (Thailand) - CFA Production</p>
+    </footer>
+
+    <!-- ===== LOCAL JS ===== -->
+    <script src="~/Scripts/jquery-3.7.1.js"></script>
+    <script src="~/Scripts/bootstrap.bundle.min.js"></script> <!-- Includes Popper 2 -->
+    <script src="~/Scripts/dataTables.js"></script>
+    <script src="~/Scripts/dataTables.buttons.js"></script>
+    <script src="~/Scripts/jszip.min.js"></script>
+    <script src="~/Scripts/pdfmake.min.js"></script>
+    <script src="~/Scripts/vfs_fonts.js"></script>
+    <script src="~/Scripts/buttons.html5.min.js"></script>
+    <script src="~/Scripts/scroller.bootstrap5.js"></script>
+    <script src="~/Scripts/dataTables.scroller.js"></script>
+    <script src="~/Scripts/FusionGrid/fusiongrid.js"></script>
+
+    <script src="~/Scripts/FusionGrid/fusiongrid.js"></script>
+
+    @Scripts.Render("~/bundles/fusioncharts")
+    @RenderSection("styleheader", required: false)
+    @RenderSection("scripts", required: false)
+
+    <script>
+        FusionCharts.options.license({
+            key: 'GA-9E4A-7a1nA8B3C4E1F2E4F4A3A13B9C3D2A2mA-8vC1A9B-22D-16ssdF3E4warA7A3C4F2C1G1C1A10C1D7A1E6F5F2B1H2ettD2E6E1A-8E1G2C11qpgB4F1D4akzD7E6F4aH-9yD2I3B6B8D2C5F2G4C1G2B1B-21ppB1A4c1G4da1wB9B6C6nA-9H4VH4A9kkdE3D4A2A3C3B10C11A3B5C4D2F3H4F1b==',
+            creditLabel: false,
+        });
+
+        FusionGrid.options.license({
+            key: 'aaC1itzB1F2F5H3D2E2C5B3A4A1C4B4A3B-7acA5C5B3sF3H2I2feA-16E2D6E2zzE1G2C11mwuB4F1D4H2D3B3D8E2F4D5D3jI-8G-7B6A6OC2ppC1DJ2B3yyjD1B1G4A17A14B6B5C6A2D1G5C1F1B2p==',
+            creditLabel: false
+        });
+    </script>
+
+</body>
+
+</html>

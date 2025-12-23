@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "fusioncharts@3.21.1",
+      "destination": "Scripts/fusioncharts/"
+    },
+    {
+      "library": "font-awesome@4.7.0",
+      "destination": "Content/font-awesome/"
+    },
+    {
+      "library": "moment.js@2.30.1",
+      "destination": "Scripts/momentjs/"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+﻿@model List<QA_LISSummary.Models.Part_Tests>
+
+@{
+    Layout = null;
+    ViewBag.Title = "Check Part Tests";
+}
+
+<!-- CSS -->
+<link href="~/Scripts/CheckPartTestsCSS/bootstrap.min.css" rel="stylesheet" />
+<link href="~/Scripts/CheckPartTestsCSS/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<link href="~/Scripts/CheckPartTestsCSS/buttons.bootstrap5.min.css" rel="stylesheet" />
+<link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon" />
+<link rel="icon" href="~/favicon.ico" type="image/x-icon" />
+<div class="container mt-4">
+    <div class="table-responsive">
+        <table id="partTestsTable" class="table table-bordered table-striped table-hover align-middle">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th>No</th>
+                    <th>Test Part</th>
+                    <th>Description</th>
+                    <th>Class</th>
+                    <th>Task</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    int index = 1;
+                    foreach (var item in Model)
+                    {
+                        var rowClass = item.class_name switch
+                        {
+                            "A" => "table-success",
+                            "B" => "table-warning",
+                            "C" => "table-danger",
+                            _ => ""
+                        };
+
+                        <tr class="@rowClass">
+                            <td class="text-center">@index</td>
+                            <td>@item.test_part</td>
+                            <td>@item.description</td>
+                            <td class="text-center">@item.class_name</td>
+                            <td class="text-center">@item.task</td>
+                        </tr>
+                        index++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No data found</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- JS (load in correct order!) -->
+<script src="~/Scripts/CheckPartTestsCSS/jquery-3.7.1.min.js"></script>
+<script src="~/Scripts/CheckPartTestsCSS/bootstrap.bundle.min.js"></script>
+
+<!-- DataTables core -->
+<script src="~/Scripts/CheckPartTestsCSS/jquery.dataTables.min.js"></script>
+<script src="~/Scripts/CheckPartTestsCSS/dataTables.bootstrap5.min.js"></script>
+
+<!-- DataTables Buttons -->
+<script src="~/Scripts/CheckPartTestsCSS/dataTables.buttons.min.js"></script>
+<script src="~/Scripts/CheckPartTestsCSS/buttons.bootstrap5.min.js"></script>
+<script src="~/Scripts/CheckPartTestsCSS/jszip.min.js"></script>
+<script src="~/Scripts/CheckPartTestsCSS/buttons.html5.min.js"></script>
+<script src="~/Scripts/CheckPartTestsCSS/buttons.print.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('#partTestsTable').DataTable({
+            dom: 'Bfrtip',        // Buttons + search + table info + pagination
+            paging: true,         // Pagination enabled
+            pageLength: 25,       // Show 50 rows per page (increase as needed)
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]], // Users can select All
+            searching: true,      // Search box
+            ordering: true,       // Column sorting
+            order: [[4, 'asc']],  // Default sort by Task column
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    className: 'btn btn-success btn-sm',
+                    text: 'Export to Excel'
+                },
+                {
+                    extend: 'print',
+                    className: 'btn btn-primary btn-sm',
+                    text: 'Print'
+                }
+            ]
+        });
+    });
+</script>
+
