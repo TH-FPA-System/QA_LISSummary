@@ -262,7 +262,7 @@ async function fetchBatchData() {
 // ============================
 buildCharts(defaultTestParts.length, true);
 applyTestPartsFromUrl();
-setInterval(fetchBatchData, 10000);
+setInterval(fetchBatchData, 30000);
 
         document.getElementById("setNumChartsBtn").addEventListener("click", () => {
             let num = parseInt(document.getElementById("numChartsInput").value);
@@ -276,6 +276,26 @@ setInterval(fetchBatchData, 10000);
 
             buildCharts(num, false);
         });
+
+
+        function scheduleMidnightRefresh() {
+            const now = new Date();
+
+            // Next midnight (00:00:00)
+            const nextMidnight = new Date();
+            nextMidnight.setHours(24, 0, 0, 0);
+
+            const msUntilMidnight = nextMidnight - now;
+
+            console.log("Page will refresh in", msUntilMidnight / 1000, "seconds");
+
+            setTimeout(() => {
+                location.reload(); // same as F5
+            }, msUntilMidnight);
+        }
+
+        // Start schedule when page loads
+        scheduleMidnightRefresh();
 
     </script>
 
