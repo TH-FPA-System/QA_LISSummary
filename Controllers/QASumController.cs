@@ -1216,6 +1216,7 @@ namespace DDCFASerialController.Controllers
         [Route("GetRealtimeDbDataBatch")]
         public ActionResult GetRealtimeDbDataBatch(string testParts, string chartIds)
         {
+            // 1️⃣ Validate input
             if (string.IsNullOrWhiteSpace(testParts) || string.IsNullOrWhiteSpace(chartIds))
                 return new HttpStatusCodeResult(400);
 
@@ -1225,52 +1226,44 @@ namespace DDCFASerialController.Controllers
             if (parts.Length != charts.Length)
                 return new HttpStatusCodeResult(400);
 
-            // -----------------------------
-            // Prepare last timestamp dictionary
-            var lastTimestamps = new Dictionary<string, DateTime>();
-            foreach (var part in parts)
-            {
-                DateTime last;
-                if (CacheLastTimestamp.TryGetValue(part, out last))
-                    lastTimestamps[part] = last;
-            }
+            // 2️⃣ Optional: get last timestamps per part
+            // Could be stored in memory, database, or passed from frontend
+            // For simplicity, assuming empty (no filtering)
+            Dictionary<string, DateTime> lastTimestamps = new Dictionary<string, DateTime>();
 
-            // -----------------------------
-            // Fetch real-time data
+            // 3️⃣ Fetch data using optimized TVP method
             var results = QASUM_BS.GetDataXYRealTimeBatch(parts, lastTimestamps);
             if (results == null) results = new List<XY_LABEL_CHARTS_STR_REALTIME>();
 
-            var response = new List<object>();
+            List<object> response = new List<object>();
+
+            // 4️⃣ Keep track of last value per chart to filter duplicates
+            var lastValuePerChart = new Dictionary<string, double>();
 
             foreach (var lastData in results)
             {
                 if (string.IsNullOrWhiteSpace(lastData.test_part) || string.IsNullOrWhiteSpace(lastData.y))
                     continue;
 
+                // Map part → chart index
                 int chartIndex = Array.FindIndex(parts, p => string.Equals(p, lastData.test_part.Trim(), StringComparison.OrdinalIgnoreCase));
-                if (chartIndex < 0) continue;
+                if (chartIndex < 0)
+                    continue;
 
                 string chartId = charts[chartIndex];
 
+                // Apply limit adjustments if needed
                 ApplyLimitAdjust(lastData);
 
-                double currentValue;
-                if (!double.TryParse(lastData.y.Trim(), out currentValue))
+                if (!double.TryParse(lastData.y.Trim(), out double currentValue))
                     continue;
 
-                // -----------------------------
-                // Skip duplicates
-                Tuple<string, double> lastPoint;
-                if (DuplicateCache.TryGetValue(chartId, out lastPoint))
-                {
-                    if (lastPoint.Item1 == lastData.label && lastPoint.Item2 == currentValue)
-                        continue;
-                }
+                // Filter duplicate value per chart
+                if (lastValuePerChart.TryGetValue(chartId, out double lastValue) && lastValue == currentValue)
+                    continue;
 
-                DuplicateCache[chartId] = Tuple.Create(lastData.label, currentValue);
+                lastValuePerChart[chartId] = currentValue;
 
-                // -----------------------------
-                // Prepare JSON response
                 response.Add(new
                 {
                     chartId,
@@ -1281,11 +1274,9 @@ namespace DDCFASerialController.Controllers
                     upper = lastData.upper,
                     partDesc = lastData.partDesc
                 });
-
-                // Update last timestamp cache
-                CacheLastTimestamp[lastData.test_part.Trim()] = lastData.date_tested;
             }
 
+            // 5️⃣ Always return JSON
             return Json(response, JsonRequestBehavior.AllowGet);
         }
 
