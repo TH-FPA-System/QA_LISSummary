@@ -946,10 +946,12 @@ ORDER BY condate;
             }
             return result;
         }
-
+        // INIT NEED CREATE TYPE BELOW
+        //CREATE TYPE dbo.TVP_TestParts AS TABLE(test_part NVARCHAR(50) PRIMARY KEY);
+        //CREATE TYPE dbo.TVP_LastTimestamps AS TABLE(test_part NVARCHAR(50) PRIMARY KEY, last_date DATETIME2);
         public List<XY_LABEL_CHARTS_STR_REALTIME> GetDataXYRealTimeBatch(
-     string[] testParts,
-     Dictionary<string, DateTime> lastTimestamps = null) // optional: last charted timestamp per part
+            string[] testParts,
+            Dictionary<string, DateTime> lastTimestamps = null)
         {
             var result = new List<XY_LABEL_CHARTS_STR_REALTIME>();
             if (testParts == null || testParts.Length == 0)
@@ -966,82 +968,90 @@ ORDER BY condate;
             if (distinctParts.Length == 0)
                 return result;
 
-            // Build VALUES clause
-            var values = string.Join(", ", distinctParts.Select((p, i) => $"(@p{i})"));
+            // -----------------------------
+            // DataTable for TVP: TestParts
+            var dtTestParts = new DataTable();
+            dtTestParts.Columns.Add("test_part", typeof(string));
+            foreach (var p in distinctParts)
+                dtTestParts.Rows.Add(p);
 
-            // SQL query: filter points newer than last timestamps if provided
-            string sql = $@"
-CREATE TABLE #TestParts (
-    test_part NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS
-);
-INSERT INTO #TestParts (test_part) VALUES {values};
+            // DataTable for TVP: LastTimestamps
+            var dtLastTimestamps = new DataTable();
+            dtLastTimestamps.Columns.Add("test_part", typeof(string));
+            dtLastTimestamps.Columns.Add("last_date", typeof(DateTime));
 
-WITH latest AS (
-    SELECT
-        tr.test_part,
-        tr.test_value,
-        tr.date_tested,
-        tr.test_unit_id,
-        p.[description] AS part_desc,
-        pt.upper_limit_value AS USL,
-        pt.lower_limit_value AS LSL,
-        la.limit_adjust_value,
-        la.limit_adjust_type,
-        ROW_NUMBER() OVER (
-            PARTITION BY tr.test_part
-            ORDER BY tr.date_tested DESC
-        ) AS rn
-    FROM test_result_lis tr
-    INNER JOIN part p ON p.part = tr.test_part
-    INNER JOIN part_test pt ON pt.part = p.part
-    LEFT JOIN test_result_lis_limit_adjust la ON la.test_part = tr.test_part
-    INNER JOIN #TestParts tp ON tp.test_part = tr.test_part
-    WHERE tr.test_result NOT IN ('B:-', 'T:-', 'T:- B:-')
-      AND tr.priority_set IN ('', '1')
-      AND EXISTS (
-          SELECT 1
-          FROM part_issue pi
-          WHERE pi.part = p.part
-            AND pi.part_issue = pt.part_issue
-            AND pi.eff_start <= SYSDATETIME()
-            AND pi.eff_close >= SYSDATETIME()
-      )
-)
-SELECT *
-FROM latest
-WHERE rn = 1
-";
-
-            // Add filter for last timestamps if provided
             if (lastTimestamps != null && lastTimestamps.Count > 0)
             {
-                // Build dynamic filter for each part
-                var filterParts = lastTimestamps.Keys.Select((part, i) => $"(test_part = @lp{i} AND date_tested > @ldt{i})");
-                sql += " AND (" + string.Join(" OR ", filterParts) + ")";
+                foreach (var kv in lastTimestamps)
+                    dtLastTimestamps.Rows.Add(kv.Key, kv.Value);
             }
+            // If empty, still pass empty table (cannot be null/DBNull)
 
-            sql += "; DROP TABLE #TestParts;";
+            string sql = @"
+SELECT
+    r.test_part,
+    r.test_value,
+    r.date_tested,
+    r.test_unit_id,
+    p.[description] AS part_desc,
+    pt.upper_limit_value AS USL,
+    pt.lower_limit_value AS LSL,
+    la.limit_adjust_value,
+    la.limit_adjust_type
+FROM @TestParts tp
+INNER JOIN part p
+    ON p.part = tp.test_part
+INNER JOIN part_test pt
+    ON pt.part = p.part
+OUTER APPLY (
+    SELECT TOP (1)
+        r.test_part,
+        r.test_value,
+        r.date_tested,
+        r.test_unit_id
+    FROM test_result_lis r
+    LEFT JOIN @LastTimestamps lt
+        ON lt.test_part = r.test_part
+    WHERE r.test_part = tp.test_part
+      AND r.test_result NOT IN ('B:-','T:-','T:- B:-')
+      AND r.priority_set IN ('','1')
+      AND (lt.last_date IS NULL OR r.date_tested > lt.last_date)
+    ORDER BY r.date_tested DESC
+) r
+LEFT JOIN test_result_lis_limit_adjust la
+    ON la.test_part = r.test_part
+WHERE r.date_tested IS NOT NULL
+  AND EXISTS (
+      SELECT 1
+      FROM part_issue pi
+      WHERE pi.part = p.part
+        AND pi.part_issue = pt.part_issue
+        AND pi.eff_start <= SYSDATETIME()
+        AND pi.eff_close >= SYSDATETIME()
+  );";
 
             using (var conn = new SqlConnection(database.Connection.ConnectionString))
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(sql, conn))
                 {
-                    // Add temp table parameters
-                    for (int i = 0; i < distinctParts.Length; i++)
-                        cmd.Parameters.AddWithValue($"@p{i}", distinctParts[i]);
+                    cmd.CommandType = CommandType.Text;
 
-                    // Add last timestamp parameters
-                    if (lastTimestamps != null)
+                    // TVP: TestParts
+                    var tvpTestParts = new SqlParameter("@TestParts", SqlDbType.Structured)
                     {
-                        int i = 0;
-                        foreach (var kv in lastTimestamps)
-                        {
-                            cmd.Parameters.AddWithValue($"@lp{i}", kv.Key);
-                            cmd.Parameters.AddWithValue($"@ldt{i}", kv.Value);
-                            i++;
-                        }
-                    }
+                        TypeName = "dbo.TVP_TestParts",
+                        Value = dtTestParts
+                    };
+                    cmd.Parameters.Add(tvpTestParts);
+
+                    // TVP: LastTimestamps (empty table if no values)
+                    var tvpLastTimestamps = new SqlParameter("@LastTimestamps", SqlDbType.Structured)
+                    {
+                        TypeName = "dbo.TVP_LastTimestamps",
+                        Value = dtLastTimestamps
+                    };
+                    cmd.Parameters.Add(tvpLastTimestamps);
 
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -1066,7 +1076,8 @@ WHERE rn = 1
                                 upper = reader["USL"] != DBNull.Value ? Convert.ToDouble(reader["USL"]) : 0,
                                 lower = reader["LSL"] != DBNull.Value ? Convert.ToDouble(reader["LSL"]) : 0,
                                 limit_adjust_value = reader["limit_adjust_value"]?.ToString()?.Trim() ?? "",
-                                limit_adjust_type = reader["limit_adjust_type"]?.ToString()?.Trim() ?? ""
+                                limit_adjust_type = reader["limit_adjust_type"]?.ToString()?.Trim() ?? "",
+                                date_tested = dateTested
                             });
                         }
                     }

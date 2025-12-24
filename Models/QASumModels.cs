@@ -74,7 +74,10 @@ namespace QA_LISSummary.Models
         public double lower { get; set; } = 0;
         public string limit_adjust_value { get; set; } = "0";
         public string limit_adjust_type { get; set; } = "0";
-        
+
+        // Add this for caching last timestamp
+        public DateTime date_tested { get; set; } = DateTime.MinValue;
+
 
     }
     public class ZoomLine_CHARTS_STR

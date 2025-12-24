@@ -1211,12 +1211,11 @@ namespace DDCFASerialController.Controllers
 
 
         // ===============================
-        // BATCH API (FIXED)
+        // BATCH API (REAL-TIME)
         // ===============================
         [Route("GetRealtimeDbDataBatch")]
         public ActionResult GetRealtimeDbDataBatch(string testParts, string chartIds)
         {
-            // Validate input
             if (string.IsNullOrWhiteSpace(testParts) || string.IsNullOrWhiteSpace(chartIds))
                 return new HttpStatusCodeResult(400);
 
@@ -1226,33 +1225,52 @@ namespace DDCFASerialController.Controllers
             if (parts.Length != charts.Length)
                 return new HttpStatusCodeResult(400);
 
-            // Fetch data
-            var results = QASUM_BS.GetDataXYRealTimeBatch(parts);
+            // -----------------------------
+            // Prepare last timestamp dictionary
+            var lastTimestamps = new Dictionary<string, DateTime>();
+            foreach (var part in parts)
+            {
+                DateTime last;
+                if (CacheLastTimestamp.TryGetValue(part, out last))
+                    lastTimestamps[part] = last;
+            }
+
+            // -----------------------------
+            // Fetch real-time data
+            var results = QASUM_BS.GetDataXYRealTimeBatch(parts, lastTimestamps);
             if (results == null) results = new List<XY_LABEL_CHARTS_STR_REALTIME>();
 
-            List<object> response = new List<object>();
+            var response = new List<object>();
 
             foreach (var lastData in results)
             {
                 if (string.IsNullOrWhiteSpace(lastData.test_part) || string.IsNullOrWhiteSpace(lastData.y))
                     continue;
 
-                // Map by test_part (case-insensitive & trimmed)
                 int chartIndex = Array.FindIndex(parts, p => string.Equals(p, lastData.test_part.Trim(), StringComparison.OrdinalIgnoreCase));
-                if (chartIndex < 0)
-                    continue;
+                if (chartIndex < 0) continue;
 
                 string chartId = charts[chartIndex];
 
                 ApplyLimitAdjust(lastData);
 
-                if (!double.TryParse(lastData.y.Trim(), out double currentValue))
+                double currentValue;
+                if (!double.TryParse(lastData.y.Trim(), out currentValue))
                     continue;
 
-                // Optional: filter duplicates if needed
-                // if (IsDuplicate(chartId, lastData.label, currentValue))
-                //     continue;
+                // -----------------------------
+                // Skip duplicates
+                Tuple<string, double> lastPoint;
+                if (DuplicateCache.TryGetValue(chartId, out lastPoint))
+                {
+                    if (lastPoint.Item1 == lastData.label && lastPoint.Item2 == currentValue)
+                        continue;
+                }
 
+                DuplicateCache[chartId] = Tuple.Create(lastData.label, currentValue);
+
+                // -----------------------------
+                // Prepare JSON response
                 response.Add(new
                 {
                     chartId,
@@ -1263,11 +1281,19 @@ namespace DDCFASerialController.Controllers
                     upper = lastData.upper,
                     partDesc = lastData.partDesc
                 });
+
+                // Update last timestamp cache
+                CacheLastTimestamp[lastData.test_part.Trim()] = lastData.date_tested;
             }
 
-            // Always return JSON, even if empty
             return Json(response, JsonRequestBehavior.AllowGet);
         }
+
+        // -----------------------------
+        // In-memory caches
+        // -----------------------------
+        private static Dictionary<string, Tuple<string, double>> DuplicateCache = new Dictionary<string, Tuple<string, double>>();
+        private static Dictionary<string, DateTime> CacheLastTimestamp = new Dictionary<string, DateTime>();
 
 
         // ===============================
