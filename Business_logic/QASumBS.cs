@@ -843,7 +843,7 @@ WHERE tr.test_part = @PartNo
   AND tr.date_tested >= @StartDate
   AND tr.date_tested < DATEADD(day, 1, @EndDate)  -- better for index usage
   AND tr.test_result NOT IN ('B:-', 'T:-', 'T:- B:-')
-  AND tr.priority_set IN ('', '1')
+  AND (tr.priority_set IN ('', '1') OR tr.priority_set IS NULL)
 /***OPTIONAL_FILTERS***/
 GROUP BY FORMAT(tr.date_tested, 'MMdd')
 ORDER BY condate;
@@ -1014,7 +1014,7 @@ OUTER APPLY (
         ON lt.test_part = r.test_part
     WHERE r.test_part = tp.test_part
       AND r.test_result NOT IN ('B:-','T:-','T:- B:-')
-      AND r.priority_set IN ('','1')
+      AND (r.priority_set IN ('', '1') OR r.priority_set IS NULL)
       AND (lt.last_date IS NULL OR r.date_tested > lt.last_date)
     ORDER BY r.date_tested DESC
 ) r
