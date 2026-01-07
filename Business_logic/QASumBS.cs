@@ -611,7 +611,7 @@ WHERE tr.test_part = @PartNo
   AND tr.date_tested >= @StartDate
   AND tr.date_tested < DATEADD(day, 1, @EndDate)  -- less than next day is enough
   AND tr.test_result NOT IN ('B:-', 'T:-', 'T:- B:-')
-  AND tr.priority_set IN ('', '1')
+  AND (tr.priority_set IN ('', '1') OR tr.priority_set IS NULL)
 /***OPTIONAL_FILTERS***/
 ORDER BY tr.date_tested ASC;
 
