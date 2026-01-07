@@ -114,6 +114,7 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Business_logic\QASumBS.cs" />
+    <Compile Include="Controllers\LISSPCController.cs" />
     <Compile Include="Controllers\QASumController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -619,6 +620,9 @@
     <Content Include="Views\QASum\ResultTaskTest.cshtml" />
     <Content Include="Views\QASum\CheckPartTests.cshtml" />
     <Content Include="Views\QASum\RealTimeChartsDbBatch.cshtml" />
+    <Content Include="Views\LISSPC\Index.cshtml" />
+    <Content Include="Views\LISSPC\GetDataAllTest.cshtml" />
+    <Content Include="Views\LISSPC\ResultPartTest.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

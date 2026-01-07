@@ -1,0 +1,187 @@
+﻿@model List<List<QA_LISSummary.Models.LABEL_VALUE_CHARTS_STR>>
+
+<div class="container-fluid mt-3">
+    <div class="row">
+
+        <form class="row g-3" action="@Url.Action("", "ResultPartTest")">
+
+            <div class="col-auto">
+                <input type="date" class="form-control" name="startDate" value="@ViewBag.StartDate" />
+            </div>
+            <div class="col-auto"> <label style="margin-top:6px"> : </label></div>
+            <div class="col-auto">
+                <input type="date" class="form-control" name="endDate" value="@ViewBag.EndDate" />
+
+            </div>
+
+
+            <div class="col-auto"> <input class="form-control" placeholder="Task No" value="@ViewBag.TaskNo" type="text" name="TaskNo" aria-label="default input example"> </div>
+            <div class="col-auto"> <input class="form-control" placeholder="PartTests No" value="@ViewBag.PartTestsNo" type="text" name="PartTestsNo" aria-label="default input example"> </div>
+            
+
+            <div class="col-md-auto"> <button type="submit" class="btn btn-dark">OK</button> </div>
+        </form>
+
+
+
+        <div class="mt-3">
+            <div class="ms-0 row mb-2">
+
+
+                <div class="card-body pt-1 pb-0">
+                    <div class="row">
+
+                        <text>
+
+                            <div class="col-2 p-1 border border-1 rounded-1 position-relative bg-white d-flex flex-column" style="width: 1500px; margin: .08em .08em; min-height: 650px;">
+
+
+                                <div id="@string.Concat("chart-live", "CH1")" class="flex-grow-1"></div>
+
+                            </div>
+                        </text>
+
+                    </div>
+                </div>
+
+
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        let chartW = '100%';
+        let chartH = '100%';
+        let chartOptions = {
+
+            "caption": "Summary Bar Charts",
+            "subCaption": "@ViewBag.PartTestsNo",
+            "xaxisname": "ITEM TEST",
+            "yaxisname": "Amount",
+
+            "lineThickness": "3",
+            "flatScrollBars": "1",
+            "scrollheight": "10",
+            "theme": "fusion"
+        };
+
+        FusionCharts.ready(function () {
+            let chartLiveDataObjs = [];
+
+
+
+
+            @{
+        <text>
+
+
+            @*var events = @Html.Raw(Json.Encode(Model));*@
+            var events =  @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model, Newtonsoft.Json.Formatting.Indented));
+            var ResultTestPass = events[0];
+            var ResultTestFail = events[1];
+            var LabelHeader = events[2];
+
+
+        chartLiveDataObjs.push(new FusionCharts({
+            type: 'scrollstackedcolumn2d',
+          
+        
+            renderAt: '@string.Concat("chart-live", "CH1")',
+            width: chartW, height: chartH,
+            showChartLoadingMessage: false,
+            dataFormat: 'json',
+            dataSource: {
+                chart: chartOptions,
+                "categories": [
+                    {
+                        "category": LabelHeader
+                    }
+                ],
+                "dataset": [
+                    {
+                       // "drawline": "1",
+                        "seriesname": "PASS ",
+                        "color": "#7DCEA0",
+                        "anchorsides": "3",
+                        "anchorradius": "3",
+                        "anchorbgcolor": "#7DCEA0",
+                        "anchorbordercolor": "#7DCEA0",
+                        "data": ResultTestPass
+                    }
+                    , {
+                        // "drawline": "1",
+                        "seriesname": "FAIL",
+                        "color": "#F1948A",
+                        "anchorsides": "3",
+                        "anchorradius": "3",
+                        "anchorbgcolor": "#F1948A",
+                        "anchorbordercolor": "#F1948A",
+                        "data": ResultTestFail
+                    }
+                    //,
+                    // {
+                    //  //  "drawline": "1",
+                    //    "seriesname": "Fan Peak Double",
+                    //     "color": "1aaf5d",
+                    //    "anchorsides": "3",
+                    //    "anchorradius": "3",
+                    //     "anchorbgcolor": "1aaf5d",
+                    //     "anchorbordercolor": "1aaf5d",
+                    //     "data": FanPeakDouble
+                    //}
+
+                ],
+                "vtrendlines": [
+                    {
+                      //  "line": [
+
+                     //       {
+                               // "startvalue": "1",
+                               // "endvalue": "31",
+                           //     "alpha": "15",
+                           //     "color": "00FF00"
+                       //     }
+                 //       ]
+                    }
+                ]
+                @*,
+                "trendlines": [
+                    {
+                        "line": [
+                            {
+                                "startvalue": "@ViewBag.LowerLim",
+                                "displayvalue": "Lower",
+                                "linethickness": "2",
+                                "color": "FF0000",
+                                "valueonright": "1",
+                                "dashed": "1",
+                                "dashgap": "5"
+                            },
+                            {
+                                "startvalue": "@ViewBag.UpperLim",
+                                "displayvalue": "Upper",
+                                "linethickness": "2",
+                                "color": "FF0000",
+                                "valueonright": "1",
+                                "dashed": "1",
+                                "dashgap": "5"
+                            }
+                        ]
+                    }
+                    ]*@
+
+               }}));
+        </text>
+
+}
+
+            chartLiveDataObjs.forEach((e) => e.render());
+
+
+        });
+    </script>
+}

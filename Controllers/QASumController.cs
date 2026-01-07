@@ -31,9 +31,7 @@ namespace DDCFASerialController.Controllers
         {
             double totalDays = 0;
 
-
             List<LABEL_VALUE_CHARTS_STR> PartTestData = new List<LABEL_VALUE_CHARTS_STR>();
-
             List<List<LABEL_VALUE_CHARTS_STR>> listModels = new List<List<LABEL_VALUE_CHARTS_STR>>();
             List<LABEL_VALUE_CHARTS_STR> ResultTestPass = new List<LABEL_VALUE_CHARTS_STR>();
             List<LABEL_VALUE_CHARTS_STR> ResultTestFail = new List<LABEL_VALUE_CHARTS_STR>();
@@ -43,10 +41,6 @@ namespace DDCFASerialController.Controllers
             Part_Models = QASUM_BS.GetCommonPartPropertyDataByTask("MODEL", "0");
             Part_DDPhase = QASUM_BS.GetDDGroupPartPropertyData("PROJECT");
             PartTestData = QASUM_BS.GetResultPartTests(DateTime.Now, DateTime.Now.AddDays(1), "", "", "", "ALL", "");
-
-
-
-
 
             for (int i = 0; i < PartTestData.Count; i++)
             {
