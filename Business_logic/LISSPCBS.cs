@@ -300,6 +300,7 @@ ORDER BY tr.date_tested ASC;
                     x = GetString(row, "condate"),
                     showverticalline = "1",
                     y = GetString(row, "test_value"),
+                    test_unit = GetString(row, "test_unit")
 
                 });
             }

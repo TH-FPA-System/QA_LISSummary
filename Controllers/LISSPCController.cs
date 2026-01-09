@@ -260,11 +260,11 @@ namespace QA_LISSummary.Controllers
                     {
                         case "MUL":
                             y *= val;
-                            data.test_unit += $" ( / {adjustValue} )";
+                            data.y += $" ( / {adjustValue} )";
                             break;
                         case "DIV":
                             y /= val;
-                            data.test_unit += $" ( x {adjustValue} )";
+                            data.y += $" ( x {adjustValue} )";
                             break;
                         case "PLUS":
                             y += val;
