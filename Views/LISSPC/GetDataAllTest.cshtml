@@ -16,148 +16,219 @@
     <link rel="stylesheet" href="~/Content/dataTables.dataTables.css" />
     <link rel="stylesheet" href="~/Content/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="~/Content/buttons.dataTables.min.css" />
-    <link rel="stylesheet" href="~/Content/dataTables.uikit.css" />
     <link rel="stylesheet" href="~/Content/uikit.min.css" />
     <link rel="stylesheet" href="~/Scripts/FusionGrid/fusiongrid.css" />
 
     <style>
         body {
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f6fa;
         }
+
+        .filter-form {
+            background-color: #ffffff;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+
+            .filter-form .form-control,
+            .filter-form .form-select {
+                border-radius: 8px;
+                transition: all 0.2s;
+            }
+
+                .filter-form .form-control:focus,
+                .filter-form .form-select:focus {
+                    box-shadow: 0 0 5px #0075c2;
+                    border-color: #0075c2;
+                }
+
+            .filter-form button {
+                border-radius: 8px;
+                transition: all 0.2s;
+            }
+
+                .filter-form button:hover {
+                    background-color: #0056a3;
+                    border-color: #0056a3;
+                }
+
+        .chart-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            min-height: 650px;
+        }
+
+        .sub-chart-card {
+            min-height: 480px;
+        }
+
+        table.custom-table th, table.custom-table td {
+            vertical-align: middle !important;
+        }
+
+        table.custom-table th {
+            color: #555555;
+            background-color: #f1f3f6;
+        }
+
+        table.custom-table td {
+            font-weight: 500;
+        }
+
+        /* Upsize date inputs */
+        input[type="date"] {
+            font-size: 1rem; /* adjust as needed */
+        }
+
+        /* Upsize select dropdowns */
+        select.form-select {
+            font-size: 0.9rem; /* adjust as needed */
+        }
+
     </style>
 </head>
 <body class="bg-light-purple">
 
     <br />
-    <div class="container">
-        <form class="row g-3" action="@Url.Action("", "LISSPCDateSelect")">
-            <div class="col-auto">
-                <input type="date" class="form-control" name="startDate" value="@ViewBag.StartDate" />
-            </div>
-            <div class="col-auto align-self-center">:</div>
-            <div class="col-auto">
-                <input type="date" class="form-control" name="endDate" value="@ViewBag.EndDate" />
-            </div>
 
-            <div class="col-md-auto">
-                <select class="form-select" name="TaskNo" onchange="this.form.submit()">
-                    @foreach (var t in ViewBag.TaskList)
-                    {
-                        <option value="@t.Task" @(t.Task.ToString() == ViewBag.TaskNo ? "selected" : "")>
-                            @t.Task (@t.TaskName)
-                        </option>
-                    }
-                </select>
-            </div>
+    <div class="container mt-4">
+<!-- Filter Form: Left-aligned -->
+<form class="row gx-2 gy-2 align-items-center filter-form px-3 py-3" action="@Url.Action("", "LISSPCDateSelect")" style="width:100%; max-width:100vw;">
+    
+    <div class="col-auto">
+        <input type="date" class="form-control form-control-sm" name="startDate" value="@ViewBag.StartDate" />
+    </div>
 
-            <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
+    <div class="col-auto fw-bold">to</div>
 
-            <div class="col-md-auto">
-                <select class="form-select" name="DropDownS">
-                    <option value="@ViewBag.DropdownS" selected>
-                        @(ViewBag.DropdownS == null ? "Please select part-test.." :
-                          ViewBag.DropdownS == "ALL" ? "Part-Test" :
-                          ViewBag.PartDesc)
-                    </option>
-                    @foreach (var str in ViewBag.Part_Array)
-                    {
-                        <option value="@str.part">@str.part_desc (@str.part)</option>
-                    }
-                </select>
-            </div>
+    <div class="col-auto">
+        <input type="date" class="form-control form-control-sm" name="endDate" value="@ViewBag.EndDate" />
+    </div>
 
-            @if (ViewBag.TaskNo == "1205")
+    <div class="col-auto">
+        <select class="form-select form-select-sm" name="TaskNo" onchange="this.form.submit()">
+            @foreach (var t in ViewBag.TaskList)
             {
-                <div class="col-md-auto">
-                    <select class="form-select" name="ModelName">
-                        <option value="@ViewBag.DPModelName" selected>
-                            @(ViewBag.DPModelName == null ? "Please select model.." :
-                              ViewBag.DPModelName == "ALL" ? "ALL MODEL" :
-                              ViewBag.DPModelName)
-                        </option>
-                        <option value="ALL">ALL</option>
-                        @foreach (var str in ViewBag.Part_Models)
-                        {
-                            <option value="@str.PropertyValue">@str.PropertyValue</option>
-                        }
-                    </select>
-                </div>
+                <option value="@t.Task" @(t.Task.ToString() == ViewBag.TaskNo ? "selected" : "")>
+                    @t.Task (@t.TaskName)
+                </option>
             }
-
-            <div class="col-md-auto">
-                <select class="form-select" name="DPNMarket">
-                    <option value="@ViewBag.DPNMarket" selected>
-                        @(ViewBag.DPNMarket == null ? "Please select market.." :
-                          ViewBag.DPNMarket == "ALL" ? "ALL Market" :
-                          ViewBag.DPNMarket)
-                    </option>
-                    <option value="ALL">ALL</option>
-                    @foreach (var str in ViewBag.Part_Markets)
-                    {
-                        <option value="@str.PropertyValue">@str.PropertyValue</option>
-                    }
-                </select>
-            </div>
-
-            <div class="col-md-auto">
-                <button type="submit" class="btn btn-dark">OK</button>
-            </div>
-        </form>
+        </select>
     </div>
 
-    <!-- Chart Container -->
-    <div class="container-fluid mt-3">
-        <div class="row">
-            <div class="col-12">
-                <div class="card p-2 mb-2" style="min-height:650px; width:100%;">
-                    <div id="chart-liveCH1" class="flex-grow-1"></div>
-                </div>
-            </div>
-        </div>
+    <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
+
+    <div class="col-auto">
+        <select class="form-select form-select-sm" name="DropDownS">
+            <option value="@ViewBag.DropdownS" selected>
+                @(ViewBag.DropdownS == null ? "Please select part-test.." :
+                  ViewBag.DropdownS == "ALL" ? "Part-Test" :
+                  ViewBag.PartDesc)
+            </option>
+            @foreach (var str in ViewBag.Part_Array)
+            {
+                <option value="@str.part">@str.part_desc (@str.part)</option>
+            }
+        </select>
     </div>
 
-    @if (ViewBag.UNIT2 != null)
+    @if (ViewBag.TaskNo == "1205")
     {
-        <div class="container-fluid mt-3">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card p-2 mb-2" style="min-height:480px; width:100%;">
-                        <div id="chart-liveCH2" class="flex-grow-1"></div>
-                    </div>
-                </div>
-            </div>
+        <div class="col-auto">
+            <select class="form-select form-select-sm" name="ModelName">
+                <option value="@ViewBag.DPModelName" selected>
+                    @(ViewBag.DPModelName == null ? "Please select model.." :
+                      ViewBag.DPModelName == "ALL" ? "ALL MODEL" :
+                      ViewBag.DPModelName)
+                </option>
+                <option value="ALL">ALL</option>
+                @foreach (var str in ViewBag.Part_Models)
+                {
+                    <option value="@str.PropertyValue">@str.PropertyValue</option>
+                }
+            </select>
         </div>
     }
 
-    <!-- Data Table -->
-    <div class="container-fluid mt-3">
-        <div class="row">
-            <div class="col-md-auto">
-                <label>ALL</label>
-                <table class="table table-bordered" style="width:300px;">
-                    <tbody>
-                        <tr><th style="color:#808080;">STDV</th><td>@ViewBag.STDV</td></tr>
-                        <tr><th style="color:#808080;">LSL</th><td>@ViewBag.LowerLim</td></tr>
-                        <tr><th style="color:#808080;">USL</th><td>@ViewBag.UpperLim</td></tr>
-                        <tr><th style="color:#808080;">AVG</th><td>@ViewBag.AVGX</td></tr>
-                        <tr><th style="color:#808080;">SAMPLES</th><td>@ViewBag.SAMPLES</td></tr>
-                        <tr><th style="color:#808080;">CP</th><td>@ViewBag.CP</td></tr>
-                        <tr><th style="color:#808080;">CPU</th><td>@ViewBag.CPU</td></tr>
-                        <tr><th style="color:#808080;">CPL</th><td>@ViewBag.CPL</td></tr>
-                        <tr><th style="color:#808080;">CPK</th><td>@ViewBag.CPK</td></tr>
-                    </tbody>
-                </table>
+    <div class="col-auto">
+        <select class="form-select form-select-sm" name="DPNMarket">
+            <option value="@ViewBag.DPNMarket" selected>
+                @(ViewBag.DPNMarket == null ? "Please select market.." :
+                  ViewBag.DPNMarket == "ALL" ? "ALL Market" :
+                  ViewBag.DPNMarket)
+            </option>
+            <option value="ALL">ALL</option>
+            @foreach (var str in ViewBag.Part_Markets)
+            {
+                <option value="@str.PropertyValue">@str.PropertyValue</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary btn-sm px-3">Apply</button>
+    </div>
+</form>
+
+    </div>
+        <!-- Chart Container -->
+        <div class="container-fluid mt-3">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card p-2 mb-2" style="min-height:650px; width:100%;">
+                        <div id="chart-liveCH1" class="flex-grow-1"></div>
+                    </div>
+                </div>
+            </div>
+
+
+            @if (ViewBag.UNIT2 != null)
+            {
+                <div class="container-fluid mt-3">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card p-2 mb-2" style="min-height:480px; width:100%;">
+                                <div id="chart-liveCH2" class="flex-grow-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+       
+        <!-- Data Table -->
+        <div class="container-fluid mt-3">
+            <div class="row">
+                <div class="col-md-auto">
+                    <label>ALL</label>
+                    <table class="table table-bordered" style="width:300px;">
+                        <tbody>
+                            <tr><th style="color:#808080;">STDV</th><td>@ViewBag.STDV</td></tr>
+                            <tr><th style="color:#808080;">LSL</th><td>@ViewBag.LowerLim</td></tr>
+                            <tr><th style="color:#808080;">USL</th><td>@ViewBag.UpperLim</td></tr>
+                            <tr><th style="color:#808080;">AVG</th><td>@ViewBag.AVGX</td></tr>
+                            <tr><th style="color:#808080;">SAMPLES</th><td>@ViewBag.SAMPLES</td></tr>
+                            <tr><th style="color:#808080;">CP</th><td>@ViewBag.CP</td></tr>
+                            <tr><th style="color:#808080;">CPU</th><td>@ViewBag.CPU</td></tr>
+                            <tr><th style="color:#808080;">CPL</th><td>@ViewBag.CPL</td></tr>
+                            <tr><th style="color:#808080;">CPK</th><td>@ViewBag.CPK</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
+        <!-- FusionCharts -->
+        <script src="~/Scripts/fusioncharts/fusioncharts.js"></script>
+        <script src="~/Scripts/fusioncharts/fusioncharts.charts.js"></script>
+        <script src="~/Scripts/fusioncharts/fusioncharts.theme.fusion.js"></script>
+        <script src="~/Scripts/fusioncharts/fusioncharts.zoomscatter.js"></script>
 
-    <!-- FusionCharts -->
-    <script src="~/Scripts/fusioncharts/fusioncharts.js"></script>
-    <script src="~/Scripts/fusioncharts/fusioncharts.charts.js"></script>
-    <script src="~/Scripts/fusioncharts/fusioncharts.theme.fusion.js"></script>
-    <script src="~/Scripts/fusioncharts/fusioncharts.zoomscatter.js"></script>
-
-    <script>
+        <script>
         FusionCharts.options.license({
             key: 'GA-9E4A-7a1nA8B3C4E1F2E4F4A3A13B9C3D2A2mA-8vC1A9B-22D-16ssdF3E4warA7A3C4F2C1G1C1A10C1D7A1E6F5F2B1H2ettD2E6E1A-8E1G2C11qpgB4F1D4akzD7E6F4aH-9yD2I3B6B8D2C5F2G4C1G2B1B-21ppB1A4c1G4da1wB9B6C6nA-9H4VH4A9kkdE3D4A2A3C3B10C11A3B5C4D2F3H4F1b==',
             creditLabel: false
@@ -279,7 +350,7 @@
                 }).render();
             }
         });
-    </script>
+        </script>
 
 </body>
 </html>
