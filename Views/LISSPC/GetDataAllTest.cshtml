@@ -1,208 +1,183 @@
-﻿
+﻿@model List<List<QA_LISSummary.Models.LISSPCModels.XY_LABEL_CHARTS_CLEAN_STR>>
 
-@model List<List<QA_LISSummary.Models.LISSPCModels.XY_LABEL_CHARTS_CLEAN_STR>>
+@{
+    Layout = null;
+}
 
-<br />
-<div class="container">
-    <form class="row g-3" action="@Url.Action("", "LISSPCDateSelect")">
-        <div class="col-auto">
-            <input type="date" class="form-control" name="startDate" value="@ViewBag.StartDate" />
-        </div>
-        <div class="col-auto align-self-center">:</div>
-        <div class="col-auto">
-            <input type="date" class="form-control" name="endDate" value="@ViewBag.EndDate" />
-        </div>
-        <div class="col-md-auto">
-            <select class="form-select" name="TaskNo" onchange="this.form.submit()">
-                @foreach (var t in ViewBag.TaskList)
-                {
-                    <option value="@t.Task" @(t.Task.ToString() == ViewBag.TaskNo ? "selected" : "")>
-                        @t.Task (@t.TaskName)
-                    </option>
-                }
-            </select>
-        </div>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@ViewBag.Title</title>
 
+    <!-- ===== CSS ===== -->
+    <link rel="stylesheet" href="~/Content/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/Content/dataTables.dataTables.css" />
+    <link rel="stylesheet" href="~/Content/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/Content/buttons.dataTables.min.css" />
+    <link rel="stylesheet" href="~/Content/dataTables.uikit.css" />
+    <link rel="stylesheet" href="~/Content/uikit.min.css" />
+    <link rel="stylesheet" href="~/Scripts/FusionGrid/fusiongrid.css" />
 
-        <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-light-purple">
 
-        <div class="col-md-auto">
-            <select class="form-select" name="DropDownS">
-                <option value="@ViewBag.DropdownS" selected>
-                    @(ViewBag.DropdownS == null ? "Please select part-test.." :
-                      ViewBag.DropdownS == "ALL" ? "Part-Test" :
-                      ViewBag.PartDesc)
-                </option>
-                @foreach (var str in ViewBag.Part_Array)
-                {
-                    <option value="@str.part">@str.part_desc (@str.part)</option>
-                }
-            </select>
-        </div>
+    <br />
+    <div class="container">
+        <form class="row g-3" action="@Url.Action("", "LISSPCDateSelect")">
+            <div class="col-auto">
+                <input type="date" class="form-control" name="startDate" value="@ViewBag.StartDate" />
+            </div>
+            <div class="col-auto align-self-center">:</div>
+            <div class="col-auto">
+                <input type="date" class="form-control" name="endDate" value="@ViewBag.EndDate" />
+            </div>
 
-        @* Model dropdown, visible only for TaskNo 1205 *@
-        @if (ViewBag.TaskNo == "1205")
-        {
             <div class="col-md-auto">
-                <select class="form-select" name="ModelName">
-                    <option value="@ViewBag.DPModelName" selected>
-                        @(ViewBag.DPModelName == null ? "Please select model.." :
-                          ViewBag.DPModelName == "ALL" ? "ALL MODEL" :
-                          ViewBag.DPModelName)
+                <select class="form-select" name="TaskNo" onchange="this.form.submit()">
+                    @foreach (var t in ViewBag.TaskList)
+                    {
+                        <option value="@t.Task" @(t.Task.ToString() == ViewBag.TaskNo ? "selected" : "")>
+                            @t.Task (@t.TaskName)
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
+
+            <div class="col-md-auto">
+                <select class="form-select" name="DropDownS">
+                    <option value="@ViewBag.DropdownS" selected>
+                        @(ViewBag.DropdownS == null ? "Please select part-test.." :
+                          ViewBag.DropdownS == "ALL" ? "Part-Test" :
+                          ViewBag.PartDesc)
+                    </option>
+                    @foreach (var str in ViewBag.Part_Array)
+                    {
+                        <option value="@str.part">@str.part_desc (@str.part)</option>
+                    }
+                </select>
+            </div>
+
+            @if (ViewBag.TaskNo == "1205")
+            {
+                <div class="col-md-auto">
+                    <select class="form-select" name="ModelName">
+                        <option value="@ViewBag.DPModelName" selected>
+                            @(ViewBag.DPModelName == null ? "Please select model.." :
+                              ViewBag.DPModelName == "ALL" ? "ALL MODEL" :
+                              ViewBag.DPModelName)
+                        </option>
+                        <option value="ALL">ALL</option>
+                        @foreach (var str in ViewBag.Part_Models)
+                        {
+                            <option value="@str.PropertyValue">@str.PropertyValue</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <div class="col-md-auto">
+                <select class="form-select" name="DPNMarket">
+                    <option value="@ViewBag.DPNMarket" selected>
+                        @(ViewBag.DPNMarket == null ? "Please select market.." :
+                          ViewBag.DPNMarket == "ALL" ? "ALL Market" :
+                          ViewBag.DPNMarket)
                     </option>
                     <option value="ALL">ALL</option>
-                    @foreach (var str in ViewBag.Part_Models)
+                    @foreach (var str in ViewBag.Part_Markets)
                     {
                         <option value="@str.PropertyValue">@str.PropertyValue</option>
                     }
                 </select>
             </div>
-        }
 
-        <div class="col-md-auto">
-            <select class="form-select" name="DPNMarket">
-                <option value="@ViewBag.DPNMarket" selected>
-                    @(ViewBag.DPNMarket == null ? "Please select market.." :
-                      ViewBag.DPNMarket == "ALL" ? "ALL Market" :
-                      ViewBag.DPNMarket)
-                </option>
-                <option value="ALL">ALL</option>
-                @foreach (var str in ViewBag.Part_Markets)
-                {
-                    <option value="@str.PropertyValue">@str.PropertyValue</option>
-                }
-            </select>
-        </div>
-
-        <div class="col-md-auto">
-            <button type="submit" class="btn btn-dark">OK</button>
-        </div>
-    </form>
-</div>
-
-<div class="container-fluid mt-3">
-    <div class="row">
-        <div class="col-12">
-            <div class="card p-2 mb-2" style="min-height:650px; width:100%;">
-                <div id="chart-liveCH1" class="flex-grow-1"></div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-dark">OK</button>
             </div>
-        </div>
+        </form>
     </div>
-</div>
 
-@if (ViewBag.UNIT2 != null)
-{
+    <!-- Chart Container -->
     <div class="container-fluid mt-3">
         <div class="row">
             <div class="col-12">
-                <div class="card p-2 mb-2" style="min-height:480px; width:100%;">
-                    <div id="chart-liveCH2" class="flex-grow-1"></div>
+                <div class="card p-2 mb-2" style="min-height:650px; width:100%;">
+                    <div id="chart-liveCH1" class="flex-grow-1"></div>
                 </div>
             </div>
         </div>
     </div>
-}
 
+    @if (ViewBag.UNIT2 != null)
+    {
+        <div class="container-fluid mt-3">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card p-2 mb-2" style="min-height:480px; width:100%;">
+                        <div id="chart-liveCH2" class="flex-grow-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
-<div class="container-fluid mt-3">
-    <div class="row">
-        <div class="col-md-auto">
-            <label>ALL</label>
-            <table class="table table-bordered" style="width:300px;">
-                <tbody>
-                    <tr><th style="color:#808080;">STDV</th><td>@ViewBag.STDV</td></tr>
-                    <tr><th style="color:#808080;">LSL</th><td>@ViewBag.LowerLim</td></tr>
-                    <tr><th style="color:#808080;">USL</th><td>@ViewBag.UpperLim</td></tr>
-                    <tr><th style="color:#808080;">AVG</th><td>@ViewBag.AVGX</td></tr>
-                    <tr><th style="color:#808080;">SAMPLES</th><td>@ViewBag.SAMPLES</td></tr>
-                    <tr><th style="color:#808080;">CP</th><td>@ViewBag.CP</td></tr>
-                    <tr><th style="color:#808080;">CPU</th><td>@ViewBag.CPU</td></tr>
-                    <tr><th style="color:#808080;">CPL</th><td>@ViewBag.CPL</td></tr>
-                    <tr><th style="color:#808080;">CPK</th><td>@ViewBag.CPK</td></tr>
-                </tbody>
-            </table>
+    <!-- Data Table -->
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <div class="col-md-auto">
+                <label>ALL</label>
+                <table class="table table-bordered" style="width:300px;">
+                    <tbody>
+                        <tr><th style="color:#808080;">STDV</th><td>@ViewBag.STDV</td></tr>
+                        <tr><th style="color:#808080;">LSL</th><td>@ViewBag.LowerLim</td></tr>
+                        <tr><th style="color:#808080;">USL</th><td>@ViewBag.UpperLim</td></tr>
+                        <tr><th style="color:#808080;">AVG</th><td>@ViewBag.AVGX</td></tr>
+                        <tr><th style="color:#808080;">SAMPLES</th><td>@ViewBag.SAMPLES</td></tr>
+                        <tr><th style="color:#808080;">CP</th><td>@ViewBag.CP</td></tr>
+                        <tr><th style="color:#808080;">CPU</th><td>@ViewBag.CPU</td></tr>
+                        <tr><th style="color:#808080;">CPL</th><td>@ViewBag.CPL</td></tr>
+                        <tr><th style="color:#808080;">CPK</th><td>@ViewBag.CPK</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 
-@section scripts {
+    <!-- FusionCharts -->
+    <script src="~/Scripts/fusioncharts/fusioncharts.js"></script>
+    <script src="~/Scripts/fusioncharts/fusioncharts.charts.js"></script>
+    <script src="~/Scripts/fusioncharts/fusioncharts.theme.fusion.js"></script>
+    <script src="~/Scripts/fusioncharts/fusioncharts.zoomscatter.js"></script>
+
     <script>
-    var events = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model, Newtonsoft.Json.Formatting.Indented));
+        FusionCharts.options.license({
+            key: 'GA-9E4A-7a1nA8B3C4E1F2E4F4A3A13B9C3D2A2mA-8vC1A9B-22D-16ssdF3E4warA7A3C4F2C1G1C1A10C1D7A1E6F5F2B1H2ettD2E6E1A-8E1G2C11qpgB4F1D4akzD7E6F4aH-9yD2I3B6B8D2C5F2G4C1G2B1B-21ppB1A4c1G4da1wB9B6C6nA-9H4VH4A9kkdE3D4A2A3C3B10C11A3B5C4D2F3H4F1b==',
+            creditLabel: false
+        });
 
-    var DataQuery1 = events[0];
-    var LabelS = events[1];
-    var DataLine = events[2];
-    var DataQuery2 = events[3];
-    var DataQuery3 = events[4];
+        FusionCharts.ready(function () {
+            var events = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model));
 
-    let chartOptions = {
-        caption: "@ViewBag.Selected @ViewBag.PartDesc (@ViewBag.DropdownS TASK: @ViewBag.TaskNo)",
-        yaxisname: "@ViewBag.UNIT1",
-        xaxisname: "Year: @ViewBag.EndDate.Substring(0,4)",
-        yaxisminvalue: "@(Convert.ToDouble(ViewBag.LowerLim) - Convert.ToDouble(ViewBag.LowerLim)/70)",
-        yaxismaxvalue: "@(Convert.ToDouble(ViewBag.UpperLim) + Convert.ToDouble(ViewBag.UpperLim)/70)",
-        plotToolText: "Result: $yValue @ViewBag.UNIT1 <br> Date Tested: $xValue",
-        valueFontColor: "#000000",
-        valueBgColor: "#FFFFFF",
-        valueBgAlpha: "50",
-        xAxisLabelMode: "CATEGORIES",
-        labelDisplay: "rotate",
-        canvasPadding: "90",
-        slantLabel: "1",
-        theme: "fusion"
-    };
+            var DataQuery1 = events[0];
+            var LabelS = events[1];
+            var DataLine = events[2];
+            var DataQuery2 = events[3];
 
-    FusionCharts.ready(function () {
-        new FusionCharts({
-            type: 'zoomscatter',
-            renderAt: 'chart-liveCH1',
-            width: '100%',
-            height: '100%',
-            showChartLoadingMessage: false,
-            dataFormat: 'json',
-            dataSource: {
-                chart: chartOptions,
-                categories: [{ category: LabelS }],
-                dataset: [
-                    {
-                        seriesname: "@ViewBag.PartDesc",
-                        color: "0075c2",
-                        anchorsides: "3",
-                        anchorradius: "3",
-                        anchorbgcolor: "0075c2",
-                        anchorbordercolor: "0075c2",
-                        data: DataQuery1
-                    },
-                    {
-                        drawline: "1",
-                        seriesname: "Mean connect line",
-                        color: "009900",
-                        anchorsides: "3",
-                        anchorradius: "4",
-                        anchorbgcolor: "D5FFD5",
-                        anchorbordercolor: "009900",
-                        data: DataLine
-                    }
-                ],
-                trendlines: [
-                    {
-                        line: [
-                            { startvalue: "@ViewBag.LowerLim", displayvalue: "Lower @ViewBag.LowerLim", linethickness: "2", color: "FF0000", dashed: "1", "valueonright": "1", dashgap: "5" },
-                            { startvalue: "@ViewBag.UpperLim", displayvalue: "Upper @ViewBag.UpperLim", linethickness: "2", color: "FF0000", dashed: "1", "valueonright": "1", dashgap: "5" }
-                        ]
-                    }
-                ]
-            }
-        }).render();
-
-        if (DataQuery2 && DataQuery2 !== 'null' && DataQuery2 !== 'undefined') {
-            let chartOptions2 = {
-                caption: "Sub: @ViewBag.PartDesc @ViewBag.EndDate.Substring(0,4)",
-                yaxisname: "@ViewBag.UNIT2",
+            let chartOptions1 = {
+                caption: "@ViewBag.Selected @ViewBag.PartDesc (@ViewBag.DropdownS TASK: @ViewBag.TaskNo)",
+                yaxisname: "@ViewBag.UNIT1",
                 xaxisname: "Year: @ViewBag.EndDate.Substring(0,4)",
-                yaxisminvalue: "-2",
-                yaxismaxvalue: "2",
-                plotToolText: "Result: $yValue @ViewBag.UNIT2 <br> Date Tested: $xValue",
+                yaxisminvalue: "@(Convert.ToDouble(ViewBag.LowerLim) - Convert.ToDouble(ViewBag.LowerLim)/70)",
+                yaxismaxvalue: "@(Convert.ToDouble(ViewBag.UpperLim) + Convert.ToDouble(ViewBag.UpperLim)/70)",
+                plotToolText: "Result: $yValue @ViewBag.UNIT1 <br> Date Tested: $xValue",
                 valueFontColor: "#000000",
                 valueBgColor: "#FFFFFF",
                 valueBgAlpha: "50",
@@ -215,34 +190,96 @@
 
             new FusionCharts({
                 type: 'zoomscatter',
-                renderAt: 'chart-liveCH2',
+                renderAt: 'chart-liveCH1',
                 width: '100%',
                 height: '100%',
                 showChartLoadingMessage: false,
                 dataFormat: 'json',
                 dataSource: {
-                    chart: chartOptions2,
+                    chart: chartOptions1,
                     categories: [{ category: LabelS }],
-                    dataset: [{
-                        seriesname: "@ViewBag.UNIT2",
-                        color: "0075c2",
-                        anchorsides: "2",
-                        anchorradius: "2",
-                        anchorbgcolor: "0075c2",
-                        anchorbordercolor: "0075c2",
-                        data: DataQuery2
-                    }],
+                    dataset: [
+                        {
+                            seriesname: "@ViewBag.PartDesc",
+                            color: "0075c2",
+                            anchorsides: "3",
+                            anchorradius: "3",
+                            anchorbgcolor: "0075c2",
+                            anchorbordercolor: "0075c2",
+                            data: DataQuery1
+                        },
+                        {
+                            drawline: "1",
+                            seriesname: "Mean connect line",
+                            color: "009900",
+                            anchorsides: "3",
+                            anchorradius: "4",
+                            anchorbgcolor: "D5FFD5",
+                            anchorbordercolor: "009900",
+                            data: DataLine
+                        }
+                    ],
                     trendlines: [
                         {
                             line: [
-                                { startvalue: "@ViewBag.LowerLim2", displayvalue: "Lower @ViewBag.LowerLim2", linethickness: "2", color: "FF0000", dashed: "1", "valueonright": "1", dashgap: "2" },
-                                { startvalue: "@ViewBag.UpperLim2", displayvalue: "Upper @ViewBag.UpperLim2", linethickness: "2", color: "FF0000", dashed: "1", "valueonright": "1", dashgap: "2", }
+                                { startvalue: "@ViewBag.LowerLim", displayvalue: "Lower @ViewBag.LowerLim", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "5" },
+                                { startvalue: "@ViewBag.UpperLim", displayvalue: "Upper @ViewBag.UpperLim", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "5" }
                             ]
                         }
                     ]
                 }
             }).render();
-        }
-    });
+
+            if (DataQuery2 && DataQuery2 !== 'null' && DataQuery2 !== 'undefined') {
+                let chartOptions2 = {
+                    caption: "Sub: @ViewBag.PartDesc @ViewBag.EndDate.Substring(0,4)",
+                    yaxisname: "@ViewBag.UNIT2",
+                    xaxisname: "Year: @ViewBag.EndDate.Substring(0,4)",
+                    yaxisminvalue: "-2",
+                    yaxismaxvalue: "2",
+                    plotToolText: "Result: $yValue @ViewBag.UNIT2 <br> Date Tested: $xValue",
+                    valueFontColor: "#000000",
+                    valueBgColor: "#FFFFFF",
+                    valueBgAlpha: "50",
+                    xAxisLabelMode: "CATEGORIES",
+                    labelDisplay: "rotate",
+                    canvasPadding: "90",
+                    slantLabel: "1",
+                    theme: "fusion"
+                };
+
+                new FusionCharts({
+                    type: 'zoomscatter',
+                    renderAt: 'chart-liveCH2',
+                    width: '100%',
+                    height: '100%',
+                    showChartLoadingMessage: false,
+                    dataFormat: 'json',
+                    dataSource: {
+                        chart: chartOptions2,
+                        categories: [{ category: LabelS }],
+                        dataset: [{
+                            seriesname: "@ViewBag.UNIT2",
+                            color: "0075c2",
+                            anchorsides: "2",
+                            anchorradius: "2",
+                            anchorbgcolor: "0075c2",
+                            anchorbordercolor: "0075c2",
+                            data: DataQuery2
+                        }],
+                        trendlines: [
+                            {
+                                line: [
+                                    { startvalue: "@ViewBag.LowerLim2", displayvalue: "Lower @ViewBag.LowerLim2", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "2" },
+                                    { startvalue: "@ViewBag.UpperLim2", displayvalue: "Upper @ViewBag.UpperLim2", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "2" }
+                                ]
+                            }
+                        ]
+                    }
+                }).render();
+            }
+        });
     </script>
-}
+
+</body>
+</html>
