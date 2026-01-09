@@ -7,17 +7,18 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
+using static QA_LISSummary.Models.LISSPCModels;
 
 namespace QA_LISSummary.Controllers
 {
     public class LISSPCController : Controller
     {
        
-            private QASumBS QASUM_BS; //Business Logic
+            private LISSPCBS LISSPC_BS; //Business Logic
 
             public LISSPCController()
             {
-                QASUM_BS = new QASumBS();
+            LISSPC_BS = new LISSPCBS();
 
             }
         // GET: LISSPC
@@ -26,13 +27,13 @@ namespace QA_LISSummary.Controllers
         public ActionResult Index()
         {
        
-            var model = new List<List<XY_LABEL_CHARTS_STR>>
+            var model = new List<List<XY_LABEL_CHARTS_CLEAN_STR>>
     {
-        new List<XY_LABEL_CHARTS_STR>(),
-        new List<XY_LABEL_CHARTS_STR>(),
-        new List<XY_LABEL_CHARTS_STR>(),
-        new List<XY_LABEL_CHARTS_STR>(),
-        new List<XY_LABEL_CHARTS_STR>()
+        new List<XY_LABEL_CHARTS_CLEAN_STR>(),
+        new List<XY_LABEL_CHARTS_CLEAN_STR>(),
+        new List<XY_LABEL_CHARTS_CLEAN_STR>(),
+        new List<XY_LABEL_CHARTS_CLEAN_STR>(),
+        new List<XY_LABEL_CHARTS_CLEAN_STR>()
     };
 
             ViewBag.StartDate = DateTime.Now.ToString("yyyy-MM-dd");
@@ -43,12 +44,12 @@ namespace QA_LISSummary.Controllers
        
             List<PART_TEST_LIMITS> Part_Tests = new List<PART_TEST_LIMITS>();
             List<PART_PROPERTY_DATA> Part_Markets = new List<PART_PROPERTY_DATA>();
-            List<List<XY_LABEL_CHARTS_STR>> listModels = new List<List<XY_LABEL_CHARTS_STR>>();
+            List<List<XY_LABEL_CHARTS_CLEAN_STR>> listModels = new List<List<XY_LABEL_CHARTS_CLEAN_STR>>();
             List<PART_PROPERTY_DATA> Part_Models = new List<PART_PROPERTY_DATA>();
 
-            Part_Tests = QASUM_BS.GetPartTestLimitsByTaskAndTestResultLIS(TaskNo);
+            Part_Tests = LISSPC_BS.GetPartTestLimitsByTaskAndTestResultLIS(TaskNo);
  
-            Part_Markets = QASUM_BS.GetDDGroupPartPropertyData("MARKET");
+            Part_Markets = LISSPC_BS.GetDDGroupPartPropertyData("MARKET");
             if (DropDownS == "ALL")
                 DropDownS = Part_Tests[0].part;
 
@@ -76,38 +77,30 @@ namespace QA_LISSummary.Controllers
             double totalDays = 0, USL = 0, LSL = 0;
             List<PART_TEST_LIMITS> Part_Test_Limits = new List<PART_TEST_LIMITS>();
             List<PART_PROPERTY_DATA> Part_Markets = new List<PART_PROPERTY_DATA>();
-            List<XY_LABEL_CHARTS_STR> DataQuery, LabelScale = new List<XY_LABEL_CHARTS_STR>();
-            List<List<XY_LABEL_CHARTS_STR>> listModels = new List<List<XY_LABEL_CHARTS_STR>>();
+            List<XY_LABEL_CHARTS_CLEAN_STR> DataQuery, LabelScale = new List<XY_LABEL_CHARTS_CLEAN_STR>();
+            List<List<XY_LABEL_CHARTS_CLEAN_STR>> listModels = new List<List<XY_LABEL_CHARTS_CLEAN_STR>>();
             List<PART_PROPERTY_DATA> Part_Models = new List<PART_PROPERTY_DATA>();
 
-            Part_Test_Limits = QASUM_BS.GetPartTestLimitsByTaskAndTestResultLIS(TaskNo);
+            Part_Test_Limits = LISSPC_BS.GetPartTestLimitsByTaskAndTestResultLIS(TaskNo);
 
             if (TaskNo == "1205")
             {
-                Part_Models = QASUM_BS.GetCommonPartPropertyDataByTask("MODEL", TaskNo);
+                Part_Models = LISSPC_BS.GetCommonPartPropertyDataByTask("MODEL", TaskNo);
             }
-            else
-            {
-
-            }
-            Part_Markets = QASUM_BS.GetDDGroupPartPropertyData("MARKET");
+            Part_Markets = LISSPC_BS.GetDDGroupPartPropertyData("MARKET");
             if (DropDownS == "ALL")
                 DropDownS = Part_Test_Limits[0].part;
-            DataQuery = QASUM_BS.GetDataXY(startDate, endDate, DropDownS, DPNMarket, TaskNo, ModelName, "");
-            List<XY_LABEL_CHARTS_STR> DataQuerySub1 = new List<XY_LABEL_CHARTS_STR>();
-            List<XY_LABEL_CHARTS_STR> DataQuerySub2 = new List<XY_LABEL_CHARTS_STR>();
-            List<XY_LABEL_CHARTS_STR> DataQuerySub3 = new List<XY_LABEL_CHARTS_STR>();
+            DataQuery = LISSPC_BS.GetDataXY(startDate, endDate, DropDownS, DPNMarket, TaskNo, ModelName, "");
+            List<XY_LABEL_CHARTS_CLEAN_STR> DataQuerySub1 = new List<XY_LABEL_CHARTS_CLEAN_STR>();
 
 
-
-
-            // New average data series
-            List<XY_LABEL_CHARTS_STR> DataQueryAvg = QASUM_BS.GetDataXY_Avg(startDate, endDate, DropDownS, DPNMarket, TaskNo, ModelName, "");
+            // New average data series xx
+            List<XY_LABEL_CHARTS_CLEAN_STR> DataQueryAvg = LISSPC_BS.GetDataXY_Avg(startDate, endDate, DropDownS, DPNMarket, TaskNo, ModelName, "");
 
 
             // Get Limit Adjust by table "test_result_lis_limit_adjust"
             LIMIT_ADJUST lIMIT_ADJUST = new LIMIT_ADJUST();
-            lIMIT_ADJUST = QASUM_BS.GetLimit_Adjust(DropDownS);
+            lIMIT_ADJUST = LISSPC_BS.GetLimit_Adjust(DropDownS);
 
             // Original DataQuery
             ApplyLimitAdjust(DataQuery, DropDownS);
@@ -115,23 +108,15 @@ namespace QA_LISSummary.Controllers
             // New DataQueryAvg
             ApplyLimitAdjust(DataQueryAvg, DropDownS);
 
-
             if (DataQuery.Count != 0)
             {
                 for (int i = 0; i < DataQuery.Count; i++)
                 {
-
-                    if (DataQuery[i].piorSet == "1")
-                        DataQuerySub1.Add(DataQuery[i]);
-                    else if (DataQuery[i].piorSet == "2")
-                        DataQuerySub2.Add(DataQuery[i]);
-                    else if (DataQuery[i].piorSet == "3")
-                        DataQuerySub3.Add(DataQuery[i]);
-                    else
                         DataQuerySub1.Add(DataQuery[i]);
 
                 }
             }
+
             for (int i = 0; i < Part_Test_Limits.Count; i++)
             {
                 if (Part_Test_Limits[i].part == DropDownS)
@@ -175,7 +160,7 @@ namespace QA_LISSummary.Controllers
             if (DataQuerySub1.Count != 0)
             {
                 var resultData = DataQuerySub1.Select(v => (double)Convert.ToDouble(v.y));
-                STDV = QASUM_BS.CalculateStandardDeviation(resultData);
+                STDV = LISSPC_BS.CalculateStandardDeviation(resultData);
                 AVGX = resultData.Average();
                 SAMPLES = resultData.Count();
 
@@ -205,12 +190,12 @@ namespace QA_LISSummary.Controllers
             MonthsRunE = Convert.ToInt16(endDate.ToString("MM"));
             DaysRunS = Convert.ToInt16(startDate.ToString("dd"));
             DaysRunE = Convert.ToInt16(endDate.ToString("dd"));
-            LabelScale = QASUM_BS.GenerateDateLabel(DaysRunS, DaysRunE, MonthsRunS, MonthsRunE);
+            LabelScale = LISSPC_BS.GenerateDateLabel(DaysRunS, DaysRunE, MonthsRunS, MonthsRunE);
 
 
             if (DataQuerySub1.Count > 0)
             {
-                ViewBag.UNIT1 = DataQuerySub1[0].unit;
+                ViewBag.UNIT1 = DataQuerySub1[0].test_unit;
                 listModels.Add(DataQuerySub1);
 
             }
@@ -226,20 +211,6 @@ namespace QA_LISSummary.Controllers
             }
 
 
-            //SUB VIEW NOT USE NOW, FINDING SOLUTION FOR 
-            if (DataQuerySub2.Count > 0)
-            {
-                ViewBag.UNIT2 = DataQuerySub2[0].unit;
-                listModels.Add(DataQuerySub2);
-                ViewBag.LowerLim2 = DataQuerySub2[0].limit_adjust_lw2;
-                ViewBag.UpperLim2 = DataQuerySub2[0].limit_adjust_up2;
-            }
-
-            if (DataQuerySub3.Count > 0)
-            {
-                ViewBag.UNIT3 = DataQuerySub3[0].unit;
-                listModels.Add(DataQuerySub3);
-            }
 
 
 
@@ -251,47 +222,38 @@ namespace QA_LISSummary.Controllers
         }
 
 
-        private static Dictionary<string, Tuple<string, double>> DuplicateCache = new Dictionary<string, Tuple<string, double>>();
-        private static Dictionary<string, DateTime> CacheLastTimestamp = new Dictionary<string, DateTime>();
-
-
-        // ===============================
         // Helpers
         // ===============================
-        private static readonly ConcurrentDictionary<string, (string Time, double Value)>
-    _lastSentByChart = new ConcurrentDictionary<string, (string, double)>();
-
-        private void ApplyLimitAdjust(List<XY_LABEL_CHARTS_STR> dataList, string part)
+        private static Dictionary<string, Tuple<string, double>> DuplicateCache = new Dictionary<string, Tuple<string, double>>();
+        private static Dictionary<string, DateTime> CacheLastTimestamp = new Dictionary<string, DateTime>();
+        private static readonly ConcurrentDictionary<string, (string Time, double Value)> _lastSentByChart = new ConcurrentDictionary<string, (string, double)>();
+        private void ApplyLimitAdjust(List<XY_LABEL_CHARTS_CLEAN_STR> dataList, string part)
         {
             if (dataList == null || dataList.Count == 0) return;
 
-            var limitAdjust = QASUM_BS.GetLimit_Adjust(part);
+            var limitAdjust = LISSPC_BS.GetLimit_Adjust(part);
 
             foreach (var data in dataList)
             {
                 string adjustValue = limitAdjust.limit_adjust_value;
                 string adjustType = limitAdjust.limit_adjust_type;
 
+           
+
                 if (!string.IsNullOrEmpty(adjustValue))
                 {
-                    data.limit_adjust1 = adjustValue;
-                    data.limit_adjust_type1 = adjustType;
-                }
-
-                if (!string.IsNullOrEmpty(data.limit_adjust1))
-                {
                     double y = Convert.ToDouble(data.y);
-                    double val = Convert.ToDouble(data.limit_adjust1);
+                    double val = Convert.ToDouble(adjustValue);
 
-                    switch (data.limit_adjust_type1)
+                    switch (adjustType)
                     {
                         case "MUL":
                             y *= val;
-                            data.unit += $" ( / {data.limit_adjust1} )";
+                            data.test_unit += $" ( / {adjustValue} )";
                             break;
                         case "DIV":
                             y /= val;
-                            data.unit += $" ( x {data.limit_adjust1} )";
+                            data.test_unit += $" ( x {adjustValue} )";
                             break;
                         case "PLUS":
                             y += val;
@@ -325,8 +287,6 @@ namespace QA_LISSummary.Controllers
             else
                 return 0;
         }
-
-
         private bool IsDuplicate(string chartId, string time, double value)
         {
             var last = _lastSentByChart.GetOrAdd(chartId, (time, value));
@@ -337,6 +297,6 @@ namespace QA_LISSummary.Controllers
             _lastSentByChart[chartId] = (time, value);
             return false;
         }
-
+        // ===============================
     }
 }
