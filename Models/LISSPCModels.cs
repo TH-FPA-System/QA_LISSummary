@@ -29,6 +29,11 @@ namespace QA_LISSummary.Models
             public string showverticalline { get; set; } = "0";
         }
 
+        public class TaskList
+        {
+            public int Task { get; set; }        
+            public string TaskName { get; set; }           
+        }
 
 
     }

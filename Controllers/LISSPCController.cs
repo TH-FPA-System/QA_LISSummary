@@ -35,10 +35,16 @@ namespace QA_LISSummary.Controllers
         new List<XY_LABEL_CHARTS_CLEAN_STR>(),
         new List<XY_LABEL_CHARTS_CLEAN_STR>()
     };
+            List<TaskList> taskLists = new List<TaskList>();
+
+            taskLists = LISSPC_BS.GetTasks();
+            string TaskNo = taskLists[0].Task.ToString();
+            ViewBag.TaskList = taskLists;
+            ViewBag.TaskNo = TaskNo;   // already exists
 
             ViewBag.StartDate = DateTime.Now.ToString("yyyy-MM-dd");
             ViewBag.EndDate = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
-            string TaskNo = "4611";
+           
             string DropDownS = "ALL";
             string DPNMarket = "ALL";
        
@@ -72,6 +78,11 @@ namespace QA_LISSummary.Controllers
         [Route("LISSPCDateSelect")]
         public ActionResult GetDataCommon(DateTime startDate, DateTime endDate, String DropDownS, String DPNMarket, String TaskNo, String PageSelected, String ModelName)
         {
+            List<TaskList> taskLists = LISSPC_BS.GetTasks();
+            ViewBag.TaskList = taskLists;
+            ViewBag.TaskNo = TaskNo;
+
+
             double STDV = 0, AVGX = 0, SAMPLES, CP, CPU, CPL, CPK;
 
             double totalDays = 0, USL = 0, LSL = 0;

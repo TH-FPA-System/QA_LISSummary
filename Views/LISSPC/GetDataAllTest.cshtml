@@ -12,7 +12,18 @@
         <div class="col-auto">
             <input type="date" class="form-control" name="endDate" value="@ViewBag.EndDate" />
         </div>
-        <input type="hidden" name="TaskNo" value="@ViewBag.TaskNo" />
+        <div class="col-md-auto">
+            <select class="form-select" name="TaskNo" onchange="this.form.submit()">
+                @foreach (var t in ViewBag.TaskList)
+                {
+                    <option value="@t.Task" @(t.Task.ToString() == ViewBag.TaskNo ? "selected" : "")>
+                        @t.Task (@t.TaskName)
+                    </option>
+                }
+            </select>
+        </div>
+
+
         <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
 
         <div class="col-md-auto">

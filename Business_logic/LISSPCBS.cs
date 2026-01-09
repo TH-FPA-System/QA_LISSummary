@@ -434,5 +434,19 @@ ORDER BY condate;
         }
 
 
+
+        // Query TASK List
+        public List<TaskList> GetTasks()
+        {
+            string query = $@"
+        select task, description From task where task in(
+select task From test_result_lis group by task) order by description";
+
+            return ExecuteQuery<TaskList>(query, row => new TaskList
+            {
+                Task = row["task"].ToTypeInteger(),
+                TaskName = GetString(row, "description")
+            });
+        }
     }
 }
