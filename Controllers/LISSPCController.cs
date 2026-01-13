@@ -294,6 +294,46 @@ namespace QA_LISSummary.Controllers
 
             return Json(availableParts);
         }
+
+        [HttpPost]
+        [Route("LISSPC/LimitAdjust/GetLimitAdjustByTask")]
+        public JsonResult GetLimitAdjustByTask(string taskId)
+        {
+            if (string.IsNullOrEmpty(taskId))
+                return Json(new List<object>());
+
+            var records = LISSPC_BS.GetLimitAdjustList()
+                                    .Where(l => l.task == taskId)
+                                    .Select(l => new {
+                                        task = l.task, // <-- add this line
+                                        task_desc = l.task_desc,
+                                        test_part = l.test_part,
+                                        part_desc = l.part_desc,
+                                        limit_adjust_type = l.limit_adjust_type,
+                                        limit_adjust_value = l.limit_adjust_value,
+                                        lower_limit_value = l.lower_limit_value,
+                                        upper_limit_value = l.upper_limit_value
+                                    })
+                                    .ToList();
+
+            return Json(records);
+        }
+
+
+        [HttpPost]
+        [Route("LISSPC/LimitAdjust/Update")]
+        public ActionResult UpdateLimitAdjust(LIMIT_ADJUST model)
+        {
+            if (ModelState.IsValid && !string.IsNullOrEmpty(model.task) && !string.IsNullOrEmpty(model.test_part))
+            {
+                // Update the record in DB
+                LISSPC_BS.UpdateLimitAdjust(model);
+            }
+            return Json(new { success = true });
+        }
+
+
+
         // Helpers
         // ===============================
         private static Dictionary<string, Tuple<string, double>> DuplicateCache = new Dictionary<string, Tuple<string, double>>();

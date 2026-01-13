@@ -1,124 +1,269 @@
 ﻿@model List<QA_LISSummary.Models.LISSPCModels.LimitAdjustVM>
 @{
+   
+        ViewBag.HideTitleBar = true;  // This will hide the navbar
+        ViewBag.HideFooter = true;   // Optional: show footer, keep as needed
+    
+
     ViewBag.Title = "Limit Adjust Management";
 }
 
-<h2>Limit Adjust Management</h2>
+<div class="container py-4">
+    <h2 class="mb-4">Limit Adjust Management</h2>
 
-<div>
-    <label for="taskSelect">Select Task:</label>
-    <select id="taskSelect" class="form-select">
-        <option value="">Select Task</option>
-        @foreach (var task in ViewBag.TaskList as List<QA_LISSummary.Models.LISSPCModels.TaskList>)
-        {
-            <option value="@task.Task">@task.TaskName</option>
-        }
-    </select>
-</div>
+    <!-- Task Selection -->
+    <div class="mb-4 row align-items-center">
+        <label for="taskSelect" class="col-sm-2 col-form-label fw-bold">Select Task:</label>
+        <div class="col-sm-4">
+            <select id="taskSelect" class="form-select">
+                <option value="">Select Task</option>
+                @foreach (var task in ViewBag.TaskList as List<QA_LISSummary.Models.LISSPCModels.TaskList>)
+                {
+                    <option value="@task.Task">@task.Task @task.TaskName </option>
+                }
+            </select>
+        </div>
+    </div>
 
-<br />
-
-<div>
-    <form id="limitAdjustForm" method="post" action="@Url.Action("CreateLimitAdjust", "LISSPC")">
-        <div class="row g-2">
-            <div class="col-md-3">
-                <label for="partSelect">Part:</label>
-                <select id="partSelect" name="test_part" class="form-select">
-                    <option value="">Select Part</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label for="limitType">Type:</label>
-                <select id="limitType" name="limit_adjust_type" class="form-select">
-                    <option value="NONE">NONE</option>
-                    <option value="MUL">MUL</option>
-                    <option value="DIV">DIV</option>
-                    <option value="PLUS">PLUS</option>
-                    <option value="MINUS">MINUS</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label for="limitValue">Value:</label>
-                <input type="text" id="limitValue" name="limit_adjust_value" class="form-control" />
-            </div>
-            <div class="col-md-2 align-self-end">
-                <input type="hidden" id="taskHidden" name="task" value="" />
-                <button type="submit" class="btn btn-primary">Add</button>
-            </div>
+    <!-- Add Limit Adjust Form -->
+    <form id="limitAdjustForm" class="mb-4 row g-3 align-items-end">
+        <div class="col-md-3">
+            <label for="partSelect" class="form-label fw-semibold">Part:</label>
+            <select id="partSelect" class="form-select" required>
+                <option value="">Select Part</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="limitType" class="form-label fw-semibold">Type:</label>
+            <select id="limitType" class="form-select">
+                <option value="MUL">MUL</option>
+                <option value="DIV">DIV</option>
+                <option value="PLUS">PLUS</option>
+                <option value="MINUS">MINUS</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="limitValue" class="form-label fw-semibold">Value:</label>
+            <input type="number" id="limitValue" class="form-control" placeholder="Enter value" step="any" required />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-plus-circle me-1"></i> Add
+            </button>
         </div>
     </form>
+
+    <div class="mb-3 row">
+        <label for="searchInput" class="col-sm-2 col-form-label fw-bold">Search:</label>
+        <div class="col-sm-4">
+            <input type="text" id="searchInput" class="form-control" placeholder="Type to search..." />
+        </div>
+    </div>
+
+    <!-- Limit Adjust Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light text-center">
+                <tr>
+                    <th>Task</th>
+                    <th>Part</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Lower</th>
+                    <th>Upper</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="limitAdjustTableBody">
+                <tr><td colspan="7" class="text-center text-muted">Select a task to load data.</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
-
-<br />
-
-<table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th>Task</th>
-            <th>Part</th>
-            <th>Type</th>
-            <th>Value</th>
-            <th>Lower</th>
-            <th>Upper</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.task_desc</td>
-                <td>@item.test_part - @item.part_desc</td>
-                <td>@item.limit_adjust_type</td>
-                <td>@item.limit_adjust_value</td>
-                <td>@item.lower_limit_value</td>
-                <td>@item.upper_limit_value</td>
-                <td>
-                    <form method="post" action="@Url.Action("DeleteLimitAdjust", "LISSPC")" style="display:inline;">
-                        <input type="hidden" name="part" value="@item.test_part" />
-                        <input type="hidden" name="task" value="@item.task" />
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this record?');">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
 
 @section Scripts {
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
-    $(document).ready(function () {
-        // Update hidden task field when task changes
-        $('#taskSelect').change(function () {
-            var taskId = $(this).val();
-            $('#taskHidden').val(taskId);
-            $('#partSelect').html('<option value="">Loading...</option>');
+        $(document).ready(function () {
 
-            if (taskId) {
+            // =======================================
+            // Load Parts for selected Task
+            // =======================================
+            function loadParts(taskId) {
+                $('#partSelect').html('<option value="">Loading...</option>');
+                if (!taskId) return;
                 $.ajax({
                     url: '@Url.Action("GetAvailablePartsByTask", "LISSPC")',
                     type: 'POST',
                     data: { taskId: taskId },
                     success: function (data) {
-                        var options = '<option value="">Select Part</option>';
-                        if (data.length === 0) {
-                            options += '<option value="">No parts available</option>';
-                        } else {
-                            $.each(data, function (i, p) {
-                                options += '<option value="' + p.part + '">' + p.part + ' - ' + p.part_desc + '</option>';
-                            });
-                        }
+                        let options = '<option value="">Select Part</option>';
+                        if (data.length === 0) options += '<option value="">No parts available</option>';
+                        else data.forEach(p => options += `<option value="${p.part}">${p.part} - ${p.part_desc}</option>`);
                         $('#partSelect').html(options);
                     },
+                    error: function () { $('#partSelect').html('<option value="">Error loading parts</option>'); }
+                });
+            }
+
+            // =======================================
+            // Load Limit Adjust Table for Task
+            // =======================================
+            function loadTable(taskId) {
+                $('#limitAdjustTableBody').html('<tr><td colspan="7" class="text-center">Loading...</td></tr>');
+                if (!taskId) return;
+
+                $.ajax({
+                    url: '@Url.Action("GetLimitAdjustByTask", "LISSPC")',
+                    type: 'POST',
+                    data: { taskId: taskId },
+                    success: function (data) {
+                        if (data.length === 0) {
+                            $('#limitAdjustTableBody').html('<tr><td colspan="7" class="text-center text-muted">No records available.</td></tr>');
+                            return;
+                        }
+                        let rows = '';
+                        data.forEach(item => {
+                            rows += `<tr data-task="${item.task}" data-part="${item.test_part}">
+
+                                 <td>${item.task}</td>
+                                <td>${item.test_part} - ${item.part_desc}</td>
+                                <td class="text-center type-cell">${item.limit_adjust_type}</td>
+                                <td class="text-center value-cell">${item.limit_adjust_value}</td>
+                                <td>${item.lower_limit_value}</td>
+                                <td>${item.upper_limit_value}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-warning btn-sm edit-btn">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm delete-btn">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>`;
+                        });
+                        $('#limitAdjustTableBody').html(rows);
+                    },
                     error: function () {
-                        $('#partSelect').html('<option value="">Error loading parts</option>');
+                        $('#limitAdjustTableBody').html('<tr><td colspan="7" class="text-center text-danger">Error loading data</td></tr>');
                     }
                 });
-            } else {
-                $('#partSelect').html('<option value="">Select Part</option>');
             }
+
+            // =======================================
+            // Task selection
+            // =======================================
+            $('#taskSelect').change(function () {
+                var taskId = $(this).val();
+                loadParts(taskId);
+                loadTable(taskId);
+            });
+
+            // =======================================
+            // Add new limit adjust (AJAX)
+            // =======================================
+            $('#limitAdjustForm').submit(function (e) {
+                e.preventDefault();
+                var taskId = $('#taskSelect').val();
+                var part = $('#partSelect').val();
+                var type = $('#limitType').val();
+                var value = $('#limitValue').val();
+                if (!taskId || !part || !value) { alert('Fill all fields.'); return; }
+
+                $.ajax({
+                    url: '@Url.Action("CreateLimitAdjust", "LISSPC")',
+                    type: 'POST',
+                    data: { task: taskId, test_part: part, limit_adjust_type: type, limit_adjust_value: value },
+                    success: function () {
+                        $('#limitValue').val('');
+                        loadParts(taskId);
+                        loadTable(taskId);
+                    },
+                    error: function () { alert('Error adding record'); }
+                });
+            });
+
+            // =======================================
+            // Delete record (AJAX)
+            // =======================================
+            $(document).on('click', '.delete-btn', function () {
+                if (!confirm('Delete this record?')) return;
+                var $row = $(this).closest('tr');
+                var taskId = $row.data('task');
+                var part = $row.data('part');
+
+                $.ajax({
+                    url: '@Url.Action("DeleteLimitAdjust", "LISSPC")',
+                    type: 'POST',
+                    data: { task: taskId, part: part },
+                    success: function () { loadParts(taskId); loadTable(taskId); },
+                    error: function () { alert('Error deleting record'); }
+                });
+            });
+
+            // =======================================
+            // Inline Edit → Save/Cancel
+            // =======================================
+
+            // Click Edit → convert row to inputs
+            $(document).on('click', '.edit-btn', function () {
+                let $row = $(this).closest('tr');
+                let type = $row.find('.type-cell').text().trim();
+                let value = $row.find('.value-cell').text().trim();
+
+                // Replace cells with inputs
+                $row.find('.type-cell').html(`
+                    <select class="form-select form-select-sm edit-type">
+                        <option value="NONE" ${type=="NONE"?"selected":""}>NONE</option>
+                        <option value="MUL" ${type=="MUL"?"selected":""}>MUL</option>
+                        <option value="DIV" ${type=="DIV"?"selected":""}>DIV</option>
+                        <option value="PLUS" ${type=="PLUS"?"selected":""}>PLUS</option>
+                        <option value="MINUS" ${type=="MINUS"?"selected":""}>MINUS</option>
+                    </select>
+                `);
+                $row.find('.value-cell').html(`<input type="number" class="form-control form-control-sm edit-value" value="${value}" step="any" />`);
+
+                // Change buttons
+                $(this).removeClass('btn-warning edit-btn').addClass('btn-success save-btn').html('<i class="bi bi-check"></i> Save');
+                $row.find('.delete-btn').removeClass('btn-danger delete-btn').addClass('btn-secondary cancel-btn').html('<i class="bi bi-x"></i> Cancel');
+            });
+
+            // Click Cancel → revert row
+            $(document).on('click', '.cancel-btn', function () {
+                let $row = $(this).closest('tr');
+                let task = $row.data('task');
+                loadTable(task);
+            });
+
+            // Click Save → send update AJAX
+            $(document).on('click', '.save-btn', function () {
+                let $row = $(this).closest('tr');
+                let task = $row.data('task');
+                let part = $row.data('part');
+                let type = $row.find('.edit-type').val();
+                let value = $row.find('.edit-value').val();
+                if (!value) { alert('Enter a value'); return; }
+
+                $.ajax({
+                    url: '@Url.Action("UpdateLimitAdjust", "LISSPC")',
+                    type: 'POST',
+                    data: { task: task, test_part: part, limit_adjust_type: type, limit_adjust_value: value },
+                    success: function () { loadTable(task); },
+                    error: function () { alert('Error updating record'); }
+                });
+            });
+
         });
-    });
+
+        // =======================================
+        // Search Filter
+        // =======================================
+        $('#searchInput').on('keyup', function () {
+            var value = $(this).val().toLowerCase();
+            $('#limitAdjustTableBody tr').filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
     </script>
 }
