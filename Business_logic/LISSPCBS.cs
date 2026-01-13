@@ -375,39 +375,76 @@ ORDER BY condate;
 }
 
 
-        public LIMIT_ADJUST GetLimit_Adjust(String PartTest)
+        //public LIMIT_ADJUST GetLimit_Adjust(String PartTest)
+        //{
+
+
+        //    DataTable tmpTable = new DataTable();
+        //    LIMIT_ADJUST result = new LIMIT_ADJUST();
+        //    List<SqlParameter> queryParms = new List<SqlParameter>();
+        //    string queryStr1;
+
+        //    queryStr1 = "select top 1 id_limit_adjust, test_part, task, limit_adjust_type, limit_adjust_value From test_result_lis_limit_adjust where test_part='" + PartTest + "' ";
+
+
+
+
+        //    using (var query = new SqlDataAdapter(queryStr1, database.Connection))
+        //    {
+        //        query.Fill(tmpTable);
+
+        //        foreach (DataRow row in tmpTable.Rows)
+        //        {
+
+        //            result.limit_adjust_type = GetString(row, "limit_adjust_type");
+        //            result.limit_adjust_value = GetString(row, "limit_adjust_value");
+
+
+        //        }
+        //    }
+
+
+        //    return result;
+        //}
+
+        public LIMIT_ADJUST GetLimit_Adjust(string partTest, string task)
         {
-
-
             DataTable tmpTable = new DataTable();
             LIMIT_ADJUST result = new LIMIT_ADJUST();
-            List<SqlParameter> queryParms = new List<SqlParameter>();
-            string queryStr1;
 
-            queryStr1 = "select top 1 id_limit_adjust, test_part, task, limit_adjust_type, limit_adjust_value From test_result_lis_limit_adjust where test_part='" + PartTest + "' ";
+            const string query = @"
+SELECT TOP 1
+    id_limit_adjust,
+    test_part,
+    task,
+    limit_adjust_type,
+    limit_adjust_value
+FROM test_result_lis_limit_adjust
+WHERE test_part = @PartTest
+  AND task = @Task";
 
-
-
-
-            using (var query = new SqlDataAdapter(queryStr1, database.Connection))
+            using (SqlCommand cmd = new SqlCommand(query, database.Connection))
             {
-                query.Fill(tmpTable);
+                cmd.Parameters.AddWithValue("@PartTest", partTest);
+                cmd.Parameters.AddWithValue("@Task", task);
 
-                foreach (DataRow row in tmpTable.Rows)
+                using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
                 {
-
-                    result.limit_adjust_type = GetString(row, "limit_adjust_type");
-                    result.limit_adjust_value = GetString(row, "limit_adjust_value");
-
-
+                    adapter.Fill(tmpTable);
                 }
             }
 
+            if (tmpTable.Rows.Count > 0)
+            {
+                DataRow row = tmpTable.Rows[0];
+                result.limit_adjust_type = GetString(row, "limit_adjust_type");
+                result.limit_adjust_value = GetString(row, "limit_adjust_value");
+            }
 
             return result;
         }
 
-   
+
         private static string GetString(DataRow row, string column)
         {
             return row[column]?.ToString() ?? string.Empty;
@@ -448,5 +485,121 @@ select task From test_result_lis group by task) order by description";
                 TaskName = GetString(row, "description")
             });
         }
+
+
+        public List<LimitAdjustVM> GetLimitAdjustList()
+        {
+            const string query = @"
+SELECT 
+    p.part,
+    p.description AS part_desc,
+    pt.lower_limit_value,
+    pt.upper_limit_value,
+    t.task,
+    t.description AS task_desc,
+    lmad.limit_adjust_type,
+    lmad.limit_adjust_value
+FROM test_result_lis_limit_adjust lmad
+INNER JOIN task t ON lmad.task = t.task
+INNER JOIN part p ON lmad.test_part = p.part
+INNER JOIN part_issue pii ON p.part = pii.part
+INNER JOIN part_test pt ON lmad.test_part = pt.part
+WHERE pii.eff_start <= GETDATE()
+  AND pii.eff_close >= GETDATE()";
+
+            return ExecuteQuery(query, row => new LimitAdjustVM
+            {
+                test_part = GetString(row, "part"),
+                part_desc = GetString(row, "part_desc"),
+                task = GetString(row, "task"),
+                task_desc = GetString(row, "task_desc"),
+                lower_limit_value = GetString(row, "lower_limit_value"),
+                upper_limit_value = GetString(row, "upper_limit_value"),
+                limit_adjust_type = GetString(row, "limit_adjust_type"),
+                limit_adjust_value = GetString(row, "limit_adjust_value")
+            });
+        }
+        public LIMIT_ADJUST GetLimitAdjust(string part, string task)
+        {
+            const string query = @"
+SELECT id_limit_adjust, test_part, task, limit_adjust_type, limit_adjust_value
+FROM test_result_lis_limit_adjust
+WHERE test_part = @Part
+  AND task = @Task";
+
+            var result = ExecuteQuery(query, row => new LIMIT_ADJUST
+            {
+                test_part = GetString(row, "test_part"),
+                task = GetString(row, "task"),
+                limit_adjust_type = GetString(row, "limit_adjust_type"),
+                limit_adjust_value = GetString(row, "limit_adjust_value")
+            },
+            new SqlParameter("@Part", part),
+            new SqlParameter("@Task", task));
+
+            return result.FirstOrDefault();
+        }
+
+
+        public void InsertLimitAdjust(LIMIT_ADJUST model)
+        {
+            const string query = @"
+INSERT INTO test_result_lis_limit_adjust
+(test_part, task, limit_adjust_type, limit_adjust_value)
+VALUES
+(@Part, @Task, @Type, @Value)";
+
+            using (SqlCommand cmd = new SqlCommand(query, database.Connection))
+            {
+                cmd.Parameters.AddWithValue("@Part", model.test_part);
+                cmd.Parameters.AddWithValue("@Task", model.task);
+                cmd.Parameters.AddWithValue("@Type", model.limit_adjust_type);
+                cmd.Parameters.AddWithValue("@Value", model.limit_adjust_value ?? "");
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void UpdateLimitAdjust(LIMIT_ADJUST model)
+        {
+            const string query = @"
+UPDATE test_result_lis_limit_adjust
+SET limit_adjust_type = @Type,
+    limit_adjust_value = @Value
+WHERE test_part = @Part
+  AND task = @Task";
+
+            using (SqlCommand cmd = new SqlCommand(query, database.Connection))
+            {
+                cmd.Parameters.AddWithValue("@Type", model.limit_adjust_type);
+                cmd.Parameters.AddWithValue("@Value", model.limit_adjust_value ?? "");
+                cmd.Parameters.AddWithValue("@Part", model.test_part);
+                cmd.Parameters.AddWithValue("@Task", model.task);
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+        public void DeleteLimitAdjust(string part, string task)
+        {
+            const string query = @"
+DELETE FROM test_result_lis_limit_adjust
+WHERE test_part = @Part
+  AND task = @Task";
+
+            using (SqlCommand cmd = new SqlCommand(query, database.Connection))
+            {
+                cmd.Parameters.AddWithValue("@Part", part);
+                cmd.Parameters.AddWithValue("@Task", task);
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+
+
+
     }
 }

@@ -36,5 +36,23 @@ namespace QA_LISSummary.Models
         }
 
 
+        public class LimitAdjustVM
+        {
+            public string test_part { get; set; }
+            public string part_desc { get; set; }
+
+            public string task { get; set; }
+            public string task_desc { get; set; }
+
+            public string limit_adjust_type { get; set; }
+            public string limit_adjust_value { get; set; }
+
+            public string lower_limit_value { get; set; }
+            public string upper_limit_value { get; set; }
+        }
+
+
+
+
     }
 }

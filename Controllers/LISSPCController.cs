@@ -111,13 +111,13 @@ namespace QA_LISSummary.Controllers
 
             // Get Limit Adjust by table "test_result_lis_limit_adjust"
             LIMIT_ADJUST lIMIT_ADJUST = new LIMIT_ADJUST();
-            lIMIT_ADJUST = LISSPC_BS.GetLimit_Adjust(DropDownS);
+            lIMIT_ADJUST = LISSPC_BS.GetLimit_Adjust(DropDownS, TaskNo);
 
             // Original DataQuery
-            ApplyLimitAdjust(DataQuery, DropDownS);
+            ApplyLimitAdjust(DataQuery, DropDownS, TaskNo);
 
             // New DataQueryAvg
-            ApplyLimitAdjust(DataQueryAvg, DropDownS);
+            ApplyLimitAdjust(DataQueryAvg, DropDownS, TaskNo);
 
             if (DataQuery.Count != 0)
             {
@@ -238,11 +238,11 @@ namespace QA_LISSummary.Controllers
         private static Dictionary<string, Tuple<string, double>> DuplicateCache = new Dictionary<string, Tuple<string, double>>();
         private static Dictionary<string, DateTime> CacheLastTimestamp = new Dictionary<string, DateTime>();
         private static readonly ConcurrentDictionary<string, (string Time, double Value)> _lastSentByChart = new ConcurrentDictionary<string, (string, double)>();
-        private void ApplyLimitAdjust(List<XY_LABEL_CHARTS_CLEAN_STR> dataList, string part)
+        private void ApplyLimitAdjust(List<XY_LABEL_CHARTS_CLEAN_STR> dataList, string part, string TaskNo)
         {
             if (dataList == null || dataList.Count == 0) return;
 
-            var limitAdjust = LISSPC_BS.GetLimit_Adjust(part);
+            var limitAdjust = LISSPC_BS.GetLimit_Adjust(part, TaskNo);
 
             foreach (var data in dataList)
             {
@@ -310,4 +310,7 @@ namespace QA_LISSummary.Controllers
         }
         // ===============================
     }
-}
+
+   
+
+    }
