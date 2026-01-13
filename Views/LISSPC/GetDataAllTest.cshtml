@@ -112,9 +112,17 @@
         </div>
 
         <div class="d-flex gap-1 mt-2">
-            <button class="btn btn-sm btn-primary w-100" onclick="applyManualTrend()">Apply</button>
-            <button class="btn btn-sm btn-secondary w-100" onclick="resetTrend()">Reset</button>
+            <button class="btn btn-sm btn-primary w-100" onclick="applyManualTrend()">
+                Apply
+            </button>
+            <button class="btn btn-sm btn-secondary w-100" onclick="resetTrend()">
+                Reset
+            </button>
+            <button class="btn btn-sm btn-danger w-100" onclick="removeAllTrendlines()">
+                Clear
+            </button>
         </div>
+
     </div>
 
     <div class="container mt-4">
@@ -404,9 +412,11 @@
             // Get current chart JSON
             const data = window.chartMainRef.getJSONData();
 
-            // Keep original trendlines, append manual lines
-            if (!data.trendlines) {
+            // ✅ Ensure trendlines[0] exists
+            if (!data.trendlines || data.trendlines.length === 0) {
                 data.trendlines = [{ line: [] }];
+            } else if (!data.trendlines[0].line) {
+                data.trendlines[0].line = [];
             }
 
             // Merge manual lines into existing trendlines[0].line
@@ -415,6 +425,21 @@
             window.chartMainRef.setJSONData(data);
         }
 
+
+        function removeAllTrendlines() {
+            if (!window.chartMainRef) return;
+
+            const data = window.chartMainRef.getJSONData();
+
+            // Remove all trendlines
+            data.trendlines = [];
+
+            window.chartMainRef.setJSONData(data);
+
+            // Clear manual input boxes
+            document.getElementById('manualLower').value = "";
+            document.getElementById('manualUpper').value = "";
+        }
 
 
     function resetTrend() {
