@@ -79,43 +79,52 @@ AND pi.eff_close >= GETDATE()";
         // Query DD PropertyValue
         public List<PART_PROPERTY_DATA> GetDDGroupPartPropertyData(string property)
         {
-            string query = $@"
-        SELECT property_value
-        FROM part_property_data
-        WHERE property = '{property}'
-          AND part IN (
-              SELECT part
-              FROM part_property_data
-              WHERE property = 'PRODUCT CODE'
-                AND property_value = 'DISHDRAWER'
-          )
-        GROUP BY property_value";
+            const string query = @"
+SELECT property_value
+FROM part_property_data
+WHERE property = @Property
+  AND part IN (
+      SELECT part
+      FROM part_property_data
+      WHERE property = 'PRODUCT CODE'
+        AND property_value = 'DISHDRAWER'
+  )
+GROUP BY property_value";
 
-            return ExecuteQuery<PART_PROPERTY_DATA>(query, row => new PART_PROPERTY_DATA
-            {
-                PropertyValue = GetString(row, "property_value")
-            });
+            return ExecuteQuery<PART_PROPERTY_DATA>(
+                query,
+                row => new PART_PROPERTY_DATA
+                {
+                    PropertyValue = GetString(row, "property_value")
+                },
+                new SqlParameter("@Property", property)
+            );
         }
-       
+
         public List<PART_PROPERTY_DATA> GetCommonPartPropertyDataByTask(string property, string taskNo)
         {
-            string query = $@"
-        SELECT property_value
-        FROM part_property_data
-        WHERE property = '{property}'
-          AND part IN (
-              SELECT part
-              FROM part_structure
-              WHERE task = '{taskNo}'
-          )
-        GROUP BY property_value";
+            const string query = @"
+SELECT property_value
+FROM part_property_data
+WHERE property = @Property
+  AND part IN (
+      SELECT part
+      FROM part_structure
+      WHERE task = @Task
+  )
+GROUP BY property_value";
 
-            return ExecuteQuery<PART_PROPERTY_DATA>(query, row => new PART_PROPERTY_DATA
-            {
-                PropertyValue = GetString(row, "property_value")
-            });
+            return ExecuteQuery<PART_PROPERTY_DATA>(
+                query,
+                row => new PART_PROPERTY_DATA
+                {
+                    PropertyValue = GetString(row, "property_value")
+                },
+                new SqlParameter("@Property", property),
+                new SqlParameter("@Task", taskNo)
+            );
         }
-      
+
         public double CalculateStandardDeviation(IEnumerable<double> values)
         {
             if (!values.Any())
@@ -195,56 +204,59 @@ AND pi.eff_close >= GETDATE()";
             return result;
         }
 
-  
+
         public List<LABEL_VALUE_CHARTS_STR> GetLabelHeader(
-            DateTime startDate,
-            DateTime endDate,
-            string taskCheck,
-            string partTestsNo,
-            string market,
-            string status,
-            string stringSpare2)
+       DateTime startDate,
+       DateTime endDate,
+       string taskCheck,
+       string partTestsNo,
+       string market,
+       string status,
+       string stringSpare2)
         {
-            // Prepare part list
-            string partList = string.IsNullOrEmpty(partTestsNo)
-                ? null
-                : string.Join(",", partTestsNo.Split(',').Select(p => $"'{p.Trim()}'"));
-
-            // Base query
-            string query = @"
-        SELECT tr.test_part, p.[description] AS LABEL
-        FROM test_result tr
-        INNER JOIN part p ON p.part = tr.test_part
-        WHERE tr.date_tested >= @StartDate
-          AND tr.date_tested < DATEADD(day, 1, @EndDate)";
-
-            // Add optional TaskCheck condition
-            if (!string.IsNullOrEmpty(taskCheck))
-                query += " AND tr.task = @TaskCheck";
-
-            // Add optional part list condition
-            if (!string.IsNullOrEmpty(partList))
-                query += $" AND p.part IN ({partList})";
-
-            query += " GROUP BY tr.test_part, p.[description]";
-
-            // Prepare parameters
             var parameters = new List<SqlParameter>
     {
         new SqlParameter("@StartDate", startDate),
-        new SqlParameter("@EndDate", endDate),
-        new SqlParameter("@TaskCheck", string.IsNullOrEmpty(taskCheck) ? (object)DBNull.Value : taskCheck)
+        new SqlParameter("@EndDate", endDate)
     };
 
-            // Execute query using ExecuteQuery
-            var result = ExecuteQuery(query, row => new LABEL_VALUE_CHARTS_STR
+            string query = @"
+SELECT tr.test_part, p.[description] AS LABEL
+FROM test_result tr
+INNER JOIN part p ON p.part = tr.test_part
+WHERE tr.date_tested >= @StartDate
+  AND tr.date_tested < DATEADD(day, 1, @EndDate)";
+
+            if (!string.IsNullOrEmpty(taskCheck))
+            {
+                query += " AND tr.task = @TaskCheck";
+                parameters.Add(new SqlParameter("@TaskCheck", taskCheck));
+            }
+
+            if (!string.IsNullOrEmpty(partTestsNo))
+            {
+                var parts = partTestsNo.Split(',').Select(p => p.Trim()).ToList();
+                var inParams = new List<string>();
+
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    string paramName = "@Part" + i;
+                    inParams.Add(paramName);
+                    parameters.Add(new SqlParameter(paramName, parts[i]));
+                }
+
+                query += $" AND p.part IN ({string.Join(",", inParams)})";
+            }
+
+            query += " GROUP BY tr.test_part, p.[description]";
+
+            return ExecuteQuery(query, row => new LABEL_VALUE_CHARTS_STR
             {
                 part_no = GetString(row, "test_part"),
                 label = GetString(row, "LABEL")
             }, parameters.ToArray());
-
-            return result;
         }
+
 
 
         public List<XY_LABEL_CHARTS_CLEAN_STR> GetDataXY(
@@ -375,43 +387,9 @@ ORDER BY condate;
 }
 
 
-        //public LIMIT_ADJUST GetLimit_Adjust(String PartTest)
-        //{
-
-
-        //    DataTable tmpTable = new DataTable();
-        //    LIMIT_ADJUST result = new LIMIT_ADJUST();
-        //    List<SqlParameter> queryParms = new List<SqlParameter>();
-        //    string queryStr1;
-
-        //    queryStr1 = "select top 1 id_limit_adjust, test_part, task, limit_adjust_type, limit_adjust_value From test_result_lis_limit_adjust where test_part='" + PartTest + "' ";
-
-
-
-
-        //    using (var query = new SqlDataAdapter(queryStr1, database.Connection))
-        //    {
-        //        query.Fill(tmpTable);
-
-        //        foreach (DataRow row in tmpTable.Rows)
-        //        {
-
-        //            result.limit_adjust_type = GetString(row, "limit_adjust_type");
-        //            result.limit_adjust_value = GetString(row, "limit_adjust_value");
-
-
-        //        }
-        //    }
-
-
-        //    return result;
-        //}
 
         public LIMIT_ADJUST GetLimit_Adjust(string partTest, string task)
         {
-            DataTable tmpTable = new DataTable();
-            LIMIT_ADJUST result = new LIMIT_ADJUST();
-
             const string query = @"
 SELECT TOP 1
     id_limit_adjust,
@@ -425,23 +403,30 @@ WHERE test_part = @PartTest
 
             using (SqlCommand cmd = new SqlCommand(query, database.Connection))
             {
-                cmd.Parameters.AddWithValue("@PartTest", partTest);
-                cmd.Parameters.AddWithValue("@Task", task);
+                cmd.Parameters.Add("@PartTest", SqlDbType.VarChar).Value = partTest;
+                cmd.Parameters.Add("@Task", SqlDbType.VarChar).Value = task;
 
                 using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
                 {
-                    adapter.Fill(tmpTable);
+                    DataTable table = new DataTable();
+                    adapter.Fill(table);
+
+                    if (table.Rows.Count == 0)
+                        return new LIMIT_ADJUST
+                        {
+                            limit_adjust_type = "NONE",
+                            limit_adjust_value = "0"
+                        };
+
+                    DataRow row = table.Rows[0];
+
+                    return new LIMIT_ADJUST
+                    {
+                        limit_adjust_type = GetString(row, "limit_adjust_type"),
+                        limit_adjust_value = GetString(row, "limit_adjust_value")
+                    };
                 }
             }
-
-            if (tmpTable.Rows.Count > 0)
-            {
-                DataRow row = tmpTable.Rows[0];
-                result.limit_adjust_type = GetString(row, "limit_adjust_type");
-                result.limit_adjust_value = GetString(row, "limit_adjust_value");
-            }
-
-            return result;
         }
 
 
@@ -519,28 +504,7 @@ WHERE pii.eff_start <= GETDATE()
                 limit_adjust_value = GetString(row, "limit_adjust_value")
             });
         }
-        public LIMIT_ADJUST GetLimitAdjust(string part, string task)
-        {
-            const string query = @"
-SELECT id_limit_adjust, test_part, task, limit_adjust_type, limit_adjust_value
-FROM test_result_lis_limit_adjust
-WHERE test_part = @Part
-  AND task = @Task";
-
-            var result = ExecuteQuery(query, row => new LIMIT_ADJUST
-            {
-                test_part = GetString(row, "test_part"),
-                task = GetString(row, "task"),
-                limit_adjust_type = GetString(row, "limit_adjust_type"),
-                limit_adjust_value = GetString(row, "limit_adjust_value")
-            },
-            new SqlParameter("@Part", part),
-            new SqlParameter("@Task", task));
-
-            return result.FirstOrDefault();
-        }
-
-
+ 
         public void InsertLimitAdjust(LIMIT_ADJUST model)
         {
             const string query = @"
