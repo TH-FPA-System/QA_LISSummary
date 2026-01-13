@@ -490,7 +490,8 @@ INNER JOIN part p ON lmad.test_part = p.part
 INNER JOIN part_issue pii ON p.part = pii.part
 INNER JOIN part_test pt ON lmad.test_part = pt.part
 WHERE pii.eff_start <= GETDATE()
-  AND pii.eff_close >= GETDATE()";
+  AND pii.eff_close >= GETDATE()
+ order by t.task, p.description";
 
             return ExecuteQuery(query, row => new LimitAdjustVM
             {
@@ -519,7 +520,8 @@ VALUES
                 cmd.Parameters.AddWithValue("@Task", model.task);
                 cmd.Parameters.AddWithValue("@Type", model.limit_adjust_type);
                 cmd.Parameters.AddWithValue("@Value", model.limit_adjust_value ?? "");
-
+                if (database.Connection.State != ConnectionState.Open)
+                    database.Connection.Open();
                 cmd.ExecuteNonQuery();
             }
         }
@@ -532,6 +534,7 @@ SET limit_adjust_type = @Type,
     limit_adjust_value = @Value
 WHERE test_part = @Part
   AND task = @Task";
+          
 
             using (SqlCommand cmd = new SqlCommand(query, database.Connection))
             {
@@ -539,6 +542,9 @@ WHERE test_part = @Part
                 cmd.Parameters.AddWithValue("@Value", model.limit_adjust_value ?? "");
                 cmd.Parameters.AddWithValue("@Part", model.test_part);
                 cmd.Parameters.AddWithValue("@Task", model.task);
+
+                if (database.Connection.State != ConnectionState.Open)
+                    database.Connection.Open();
 
                 cmd.ExecuteNonQuery();
             }
@@ -556,7 +562,8 @@ WHERE test_part = @Part
             {
                 cmd.Parameters.AddWithValue("@Part", part);
                 cmd.Parameters.AddWithValue("@Task", task);
-
+                if (database.Connection.State != ConnectionState.Open)
+                    database.Connection.Open();
                 cmd.ExecuteNonQuery();
             }
         }

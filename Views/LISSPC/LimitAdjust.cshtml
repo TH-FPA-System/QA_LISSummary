@@ -1,0 +1,124 @@
+﻿@model List<QA_LISSummary.Models.LISSPCModels.LimitAdjustVM>
+@{
+    ViewBag.Title = "Limit Adjust Management";
+}
+
+<h2>Limit Adjust Management</h2>
+
+<div>
+    <label for="taskSelect">Select Task:</label>
+    <select id="taskSelect" class="form-select">
+        <option value="">Select Task</option>
+        @foreach (var task in ViewBag.TaskList as List<QA_LISSummary.Models.LISSPCModels.TaskList>)
+        {
+            <option value="@task.Task">@task.TaskName</option>
+        }
+    </select>
+</div>
+
+<br />
+
+<div>
+    <form id="limitAdjustForm" method="post" action="@Url.Action("CreateLimitAdjust", "LISSPC")">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label for="partSelect">Part:</label>
+                <select id="partSelect" name="test_part" class="form-select">
+                    <option value="">Select Part</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="limitType">Type:</label>
+                <select id="limitType" name="limit_adjust_type" class="form-select">
+                    <option value="NONE">NONE</option>
+                    <option value="MUL">MUL</option>
+                    <option value="DIV">DIV</option>
+                    <option value="PLUS">PLUS</option>
+                    <option value="MINUS">MINUS</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="limitValue">Value:</label>
+                <input type="text" id="limitValue" name="limit_adjust_value" class="form-control" />
+            </div>
+            <div class="col-md-2 align-self-end">
+                <input type="hidden" id="taskHidden" name="task" value="" />
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<br />
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Task</th>
+            <th>Part</th>
+            <th>Type</th>
+            <th>Value</th>
+            <th>Lower</th>
+            <th>Upper</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.task_desc</td>
+                <td>@item.test_part - @item.part_desc</td>
+                <td>@item.limit_adjust_type</td>
+                <td>@item.limit_adjust_value</td>
+                <td>@item.lower_limit_value</td>
+                <td>@item.upper_limit_value</td>
+                <td>
+                    <form method="post" action="@Url.Action("DeleteLimitAdjust", "LISSPC")" style="display:inline;">
+                        <input type="hidden" name="part" value="@item.test_part" />
+                        <input type="hidden" name="task" value="@item.task" />
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this record?');">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+    $(document).ready(function () {
+        // Update hidden task field when task changes
+        $('#taskSelect').change(function () {
+            var taskId = $(this).val();
+            $('#taskHidden').val(taskId);
+            $('#partSelect').html('<option value="">Loading...</option>');
+
+            if (taskId) {
+                $.ajax({
+                    url: '@Url.Action("GetAvailablePartsByTask", "LISSPC")',
+                    type: 'POST',
+                    data: { taskId: taskId },
+                    success: function (data) {
+                        var options = '<option value="">Select Part</option>';
+                        if (data.length === 0) {
+                            options += '<option value="">No parts available</option>';
+                        } else {
+                            $.each(data, function (i, p) {
+                                options += '<option value="' + p.part + '">' + p.part + ' - ' + p.part_desc + '</option>';
+                            });
+                        }
+                        $('#partSelect').html(options);
+                    },
+                    error: function () {
+                        $('#partSelect').html('<option value="">Error loading parts</option>');
+                    }
+                });
+            } else {
+                $('#partSelect').html('<option value="">Select Part</option>');
+            }
+        });
+    });
+    </script>
+}

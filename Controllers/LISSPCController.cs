@@ -232,7 +232,68 @@ namespace QA_LISSummary.Controllers
 
         }
 
+        // ========================
+        // LIMIT ADJUST CRUD
+        // ========================
 
+        [Route("LISSPC/LimitAdjust")]
+        public ActionResult LimitAdjust()
+        {
+            // Load tasks
+            var tasks = LISSPC_BS.GetTasks();
+            ViewBag.TaskList = tasks;
+
+            // Load existing limit adjust data
+            var model = LISSPC_BS.GetLimitAdjustList();
+            return View("LimitAdjust", model);
+        }
+
+        [HttpPost]
+        [Route("LISSPC/LimitAdjust/Create")]
+        public ActionResult CreateLimitAdjust(LIMIT_ADJUST model)
+        {
+            if (ModelState.IsValid)
+            {
+                // Insert only if part exists in required tables and not already added
+                LISSPC_BS.InsertLimitAdjust(model);
+            }
+            return RedirectToAction("LimitAdjust");
+        }
+
+        [HttpPost]
+        [Route("LISSPC/LimitAdjust/Delete")]
+        public ActionResult DeleteLimitAdjust(string part, string task)
+        {
+            if (!string.IsNullOrEmpty(part) && !string.IsNullOrEmpty(task))
+            {
+                LISSPC_BS.DeleteLimitAdjust(part, task);
+            }
+            return RedirectToAction("LimitAdjust");
+        }
+
+        [HttpPost]
+        [Route("LISSPC/LimitAdjust/GetAvailablePartsByTask")]
+        public JsonResult GetAvailablePartsByTask(string taskId)
+        {
+            if (string.IsNullOrEmpty(taskId))
+                return Json(new List<object>());
+
+            // Get all parts for task
+            var allParts = LISSPC_BS.GetPartTestLimitsByTaskAndTestResultLIS(taskId);
+
+            // Get parts already in limit adjust table for this task
+            var addedParts = LISSPC_BS.GetLimitAdjustList()
+                                      .Where(l => l.task == taskId)
+                                      .Select(l => l.test_part)
+                                      .ToList();
+
+            // Filter only parts never added
+            var availableParts = allParts.Where(p => !addedParts.Contains(p.part))
+                                         .Select(p => new { part = p.part, part_desc = p.part_desc })
+                                         .ToList();
+
+            return Json(availableParts);
+        }
         // Helpers
         // ===============================
         private static Dictionary<string, Tuple<string, double>> DuplicateCache = new Dictionary<string, Tuple<string, double>>();
@@ -311,6 +372,6 @@ namespace QA_LISSummary.Controllers
         // ===============================
     }
 
-   
+ 
 
     }
