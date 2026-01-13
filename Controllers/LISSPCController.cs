@@ -76,7 +76,9 @@ namespace QA_LISSummary.Controllers
 
 
         [Route("LISSPCDateSelect")]
-        public ActionResult GetDataCommon(DateTime startDate, DateTime endDate, String DropDownS, String DPNMarket, String TaskNo, String PageSelected, String ModelName)
+        public ActionResult GetDataCommon(
+            DateTime startDate, DateTime endDate, String DropDownS, String DPNMarket,
+            String TaskNo, String PageSelected, String ModelName, bool SkipEmptyData = false)  // ✅ new parameter)
         {
             List<TaskList> taskLists = LISSPC_BS.GetTasks();
             ViewBag.TaskList = taskLists;
@@ -202,14 +204,29 @@ namespace QA_LISSummary.Controllers
             DaysRunS = Convert.ToInt16(startDate.ToString("dd"));
             DaysRunE = Convert.ToInt16(endDate.ToString("dd"));
             LabelScale = LISSPC_BS.GenerateDateLabel(DaysRunS, DaysRunE, MonthsRunS, MonthsRunE);
-
+            // Save skip toggle in ViewBag for Razor
+            ViewBag.SkipEmptyData = SkipEmptyData;
 
             if (DataQuerySub1.Count > 0)
             {
                 ViewBag.UNIT1 = DataQuerySub1[0].test_unit;
                 listModels.Add(DataQuerySub1);
 
+                if (SkipEmptyData)
+                {
+                    // Collect all dates in DataQuerySub1
+                    var datesWithData = DataQuerySub1
+                        .Select(d => d.x.Substring(0, 4)) // assuming x = "ddMM,Value" format; take "0106"
+                        .Distinct()
+                        .ToList();
+
+                    // Filter LabelScale to keep only dates that exist in data
+                    LabelScale = LabelScale
+                        .Where(l => datesWithData.Contains(l.x.Substring(0, 4))) // match "0106" etc
+                        .ToList();
+                }
             }
+
 
             if (listModels.Count > 0)
             {

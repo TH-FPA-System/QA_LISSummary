@@ -127,7 +127,9 @@
 
     <div class="container mt-4">
         <!-- Filter Form -->
-        <form class="row gx-2 gy-2 align-items-center filter-form px-3 py-3" action="@Url.Action("", "LISSPCDateSelect")" style="width:100%; max-width:100vw;">
+        <form class="row gx-2 gy-2 align-items-center filter-form px-3 py-3"
+              action="@Url.Action("", "LISSPCDateSelect")"
+              style="width:100%; max-width:100vw;">
 
             <div class="col-auto">
                 <input type="date" class="form-control form-control-sm" name="startDate" value="@ViewBag.StartDate" />
@@ -199,10 +201,22 @@
                 </select>
             </div>
 
+            <!-- ✅ Skip Empty Dates Toggle -->
+            <div class="col-auto form-check" style="padding-top:5px;">
+                <input class="form-check-input" type="checkbox"
+                       name="SkipEmptyData" id="skipEmptyData" value="true"
+                       @(ViewBag.SkipEmptyData != null && (bool)ViewBag.SkipEmptyData ? "checked" : "") />
+                <label class="form-check-label" for="skipEmptyData">
+                    Skip Empty Dates
+                </label>
+            </div>
+
             <div class="col-auto">
                 <button type="submit" class="btn btn-primary btn-sm px-3">Apply</button>
             </div>
         </form>
+
+
     </div>
 
     <!-- Chart Container -->
