@@ -623,7 +623,6 @@
     <Content Include="Views\QASum\CheckPartTests.cshtml" />
     <Content Include="Views\QASum\RealTimeChartsDbBatch.cshtml" />
     <Content Include="Views\LISSPC\GetDataAllTest.cshtml" />
-    <Content Include="Views\LISSPC\ResultPartTest.cshtml" />
     <Content Include="Views\LISSPC\LimitAdjust.cshtml" />
   </ItemGroup>
   <ItemGroup>
