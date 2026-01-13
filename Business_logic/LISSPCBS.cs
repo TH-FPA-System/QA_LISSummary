@@ -273,7 +273,6 @@ SELECT
     tr.test_info1,
     tr.test_info2
 FROM test_result_clean tr
-INNER JOIN part_property_data ptd ON ptd.part = tr.part
 WHERE tr.test_part = @PartNo
   AND tr.date_tested >= @StartDate
   AND tr.date_tested < DATEADD(day, 1, @EndDate)
