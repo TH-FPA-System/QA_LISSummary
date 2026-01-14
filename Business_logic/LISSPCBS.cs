@@ -570,6 +570,147 @@ WHERE test_part = @Part
 
 
 
+        //REAL-TIME
+        // INIT NEED CREATE TYPE BELOW
+        //CREATE TYPE dbo.TVP_TestParts AS TABLE(test_part NVARCHAR(50) PRIMARY KEY);
+        //CREATE TYPE dbo.TVP_LastTimestamps AS TABLE(test_part NVARCHAR(50) PRIMARY KEY, last_date DATETIME2);
+        public List<XY_LABEL_CHARTS_STR_REALTIME> GetDataXYRealTimeBatch(
+            string[] testParts,
+            Dictionary<string, DateTime> lastTimestamps = null)
+        {
+            var result = new List<XY_LABEL_CHARTS_STR_REALTIME>();
+            if (testParts == null || testParts.Length == 0)
+                return result;
+
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
+            var distinctParts = testParts
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => p.Trim())
+                .Distinct()
+                .ToArray();
+
+            if (distinctParts.Length == 0)
+                return result;
+
+            // -----------------------------
+            // DataTable for TVP: TestParts
+            var dtTestParts = new DataTable();
+            dtTestParts.Columns.Add("test_part", typeof(string));
+            foreach (var p in distinctParts)
+                dtTestParts.Rows.Add(p);
+
+            // DataTable for TVP: LastTimestamps
+            var dtLastTimestamps = new DataTable();
+            dtLastTimestamps.Columns.Add("test_part", typeof(string));
+            dtLastTimestamps.Columns.Add("last_date", typeof(DateTime));
+
+            if (lastTimestamps != null && lastTimestamps.Count > 0)
+            {
+                foreach (var kv in lastTimestamps)
+                    dtLastTimestamps.Rows.Add(kv.Key, kv.Value);
+            }
+            // If empty, still pass empty table (cannot be null/DBNull)
+
+            string sql = @"
+SELECT
+    r.test_part,
+    r.test_value,
+    r.date_tested,
+    r.test_unit_id,
+    p.[description] AS part_desc,
+    pt.upper_limit_value AS USL,
+    pt.lower_limit_value AS LSL,
+    la.limit_adjust_value,
+    la.limit_adjust_type
+FROM @TestParts tp
+INNER JOIN part p
+    ON p.part = tp.test_part
+INNER JOIN part_test pt
+    ON pt.part = p.part
+OUTER APPLY (
+    SELECT TOP (1)
+        r.test_part,
+        r.test_value,
+        r.date_tested,
+        r.test_unit_id
+    FROM test_result_lis r
+    LEFT JOIN @LastTimestamps lt
+        ON lt.test_part = r.test_part
+    WHERE r.test_part = tp.test_part
+      AND r.test_result NOT IN ('B:-','T:-','T:- B:-')
+      AND (r.priority_set IN ('', '1') OR r.priority_set IS NULL)
+      AND (lt.last_date IS NULL OR r.date_tested > lt.last_date)
+    ORDER BY r.date_tested DESC
+) r
+LEFT JOIN test_result_lis_limit_adjust la
+    ON la.test_part = r.test_part
+WHERE r.date_tested IS NOT NULL
+  AND EXISTS (
+      SELECT 1
+      FROM part_issue pi
+      WHERE pi.part = p.part
+        AND pi.part_issue = pt.part_issue
+        AND pi.eff_start <= SYSDATETIME()
+        AND pi.eff_close >= SYSDATETIME()
+  );";
+
+            using (var conn = new SqlConnection(database.Connection.ConnectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+
+                    // TVP: TestParts
+                    var tvpTestParts = new SqlParameter("@TestParts", SqlDbType.Structured)
+                    {
+                        TypeName = "dbo.TVP_TestParts",
+                        Value = dtTestParts
+                    };
+                    cmd.Parameters.Add(tvpTestParts);
+
+                    // TVP: LastTimestamps (empty table if no values)
+                    var tvpLastTimestamps = new SqlParameter("@LastTimestamps", SqlDbType.Structured)
+                    {
+                        TypeName = "dbo.TVP_LastTimestamps",
+                        Value = dtLastTimestamps
+                    };
+                    cmd.Parameters.Add(tvpLastTimestamps);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            if (reader.IsDBNull(reader.GetOrdinal("date_tested")) ||
+                                reader.IsDBNull(reader.GetOrdinal("test_value")) ||
+                                reader.IsDBNull(reader.GetOrdinal("test_part")))
+                                continue;
+
+                            DateTime dateTested = reader.GetDateTime(reader.GetOrdinal("date_tested"));
+                            double testValue = reader.GetDouble(reader.GetOrdinal("test_value"));
+
+                            result.Add(new XY_LABEL_CHARTS_STR_REALTIME
+                            {
+                                label = dateTested.ToString("dd-MM-yyyy HH:mm:ss"),
+                                x = dateTested.ToString("HHmm"),
+                                y = testValue.ToString(),
+                                test_part = reader["test_part"].ToString().Trim(),
+                                unit = reader["test_unit_id"]?.ToString()?.Trim() ?? "",
+                                partDesc = reader["part_desc"]?.ToString()?.Trim() ?? "",
+                                upper = reader["USL"] != DBNull.Value ? Convert.ToDouble(reader["USL"]) : 0,
+                                lower = reader["LSL"] != DBNull.Value ? Convert.ToDouble(reader["LSL"]) : 0,
+                                limit_adjust_value = reader["limit_adjust_value"]?.ToString()?.Trim() ?? "",
+                                limit_adjust_type = reader["limit_adjust_type"]?.ToString()?.Trim() ?? "",
+                                date_tested = dateTested
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
 
 
     }

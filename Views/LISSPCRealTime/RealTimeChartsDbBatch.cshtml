@@ -1,0 +1,303 @@
+﻿@{
+    Layout = null;
+    ViewBag.Title = "Responsive Dynamic Charts Grid";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Responsive Dynamic Charts Grid</title>
+
+    <script src="~/Scripts/chart.js"></script>
+    <script src="~/Scripts/moment.min.js"></script>
+    <script src="~/Scripts/chartjs-adapter-moment@1.0.0.js"></script>
+
+    <style>
+        body { margin: 20px; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f4; }
+
+        /* Top config */
+        #chartConfig { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        #chartConfig label { font-weight: 600; }
+        #chartConfig input { padding: 5px 8px; border-radius: 4px; border: 1px solid #ccc; width: 60px; }
+        #chartConfig button { padding: 6px 12px; border: none; border-radius: 4px; background: #4CAF50; color: white; cursor: pointer; }
+        #chartConfig button:hover { background: #45a049; }
+
+        /* Charts grid */
+        .charts-grid { display: grid; gap: 16px; justify-content: center; transition: all 0.4s ease; }
+        .chart-container { background: white; border-radius: 8px; padding: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; }
+        .chart-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 4px; }
+
+        /* Test Part group */
+        .test-part-group { display: flex; align-items: center; gap: 6px; background: #f0f4f8; padding: 4px 8px; border-radius: 6px; border: 1px solid #cfd8e3; }
+        .test-part-group label { font-weight: 600; font-size: 0.9em; margin: 0; }
+        .test-part-group input { width: 80px; padding: 3px 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85em; }
+        .test-part-group button { padding: 3px 8px; background: #2196F3; color: white; border-radius: 4px; border: none; cursor: pointer; font-size: 0.85em; }
+        .test-part-group button:hover { background: #1976d2; }
+
+        .check-icon { font-size: 1.2em; color: #2196F3; text-decoration: none; }
+        .check-icon:hover { color: #1976d2; }
+
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-weight: 500; border: 1px solid transparent; display: inline-block; cursor: default; }
+        .badge.part-desc { background: #fff3e0; color: #e65100; border-color: #ffe0b2; }
+        .badge.unit-badge { background: #e0f7fa; color: #00796b; border-color: #b2ebf2; }
+
+        .chart-wrapper { width: 100%; transition: height 0.4s ease; }
+        canvas { width: 100% !important; height: 100% !important; }
+
+        /* Mobile */
+        @@media (max-width: 650px) {
+            .charts-grid { grid-template-columns: 1fr !important; }
+            .chart-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+        }
+
+        /* Highlight when test part is confirmed */
+        .test-part-group.checked {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+        .test-part-group.checked input { border-color: #4caf50; }
+        .test-part-group.checked label { color: #2e7d32; }
+    </style>
+</head>
+<body>
+
+    <div id="chartConfig">
+        <label>Number of Charts (Max 4)</label>
+        <input type="number" id="numChartsInput" min="1" max="4" value="4" />
+        <button id="setNumChartsBtn">Apply</button>
+    </div>
+
+    <div class="charts-grid" id="chartsGrid"></div>
+
+    <script>
+const MAX_POINTS = 50;
+const chartsGrid = document.getElementById("chartsGrid");
+let charts = [];
+const defaultTestParts = ["595865", "595130", "595058", "595555"];
+
+// ============================
+// Helper functions
+// ============================
+function setCheckedState(c) {
+    const group = c.testPartInput.closest(".test-part-group");
+    group.classList.add("checked");
+    if (!c.checkedIcon) {
+        const icon = document.createElement("span");
+        icon.textContent = "✓";
+        icon.style.color = "green";
+        icon.style.fontWeight = "bold";
+        icon.style.marginLeft = "6px";
+        c.testPartInput.parentNode.appendChild(icon);
+        c.checkedIcon = icon;
+    }
+}
+
+function clearCheckedState(c) {
+    const group = c.testPartInput.closest(".test-part-group");
+    group.classList.remove("checked");
+    if (c.checkedIcon) { c.checkedIcon.remove(); c.checkedIcon = null; }
+    c.testPart = "";
+}
+
+function getQueryParam(name) { return new URLSearchParams(window.location.search).get(name); }
+
+// ============================
+// Create chart container
+// ============================
+function createChartContainer(index, inputValue, canvasHeight) {
+    const container = document.createElement("div");
+    container.className = "chart-container";
+    const chartId = `chart_${index}`;
+
+    container.innerHTML = `
+        <div class="chart-header">
+            <div class="test-part-group">
+                <label for="testPartInput${index}">Test Part</label>
+                <input type="text" id="testPartInput${index}" value="${inputValue}" />
+                <button id="setPartBtn${index}">Set</button>
+            </div>
+            <a href="@Url.Action("CheckPartTests", "QASum")" target="_blank" title="Check Other" class="check-icon">&#128269;</a>
+            <span id="partDesc${index}" class="badge part-desc" title=""></span>
+            <span id="unit${index}" class="badge unit-badge" title=""></span>
+        </div>
+        <div class="chart-wrapper" style="height:${canvasHeight}px">
+            <canvas id="canvas${index}"></canvas>
+        </div>
+    `;
+
+    chartsGrid.appendChild(container);
+    const ctx = document.getElementById(`canvas${index}`).getContext("2d");
+    const chart = new Chart(ctx, {
+        type: "line",
+        data: {
+            datasets: [
+                { label: "Test Value", data: [], borderColor: "rgba(75,192,192,1)", backgroundColor: [], tension: 0.2, pointRadius: 5 },
+                { label: "Lower Limit", data: [], borderColor: "red", borderDash: [5,5], fill: "+1", pointRadius: 0 },
+                { label: "Upper Limit", data: [], borderColor: "orange", borderDash: [5,5], pointRadius: 0 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: "nearest", intersect: false },
+            scales: {
+                x: { type: "time", time: { parser: "DD-MM-YYYY HH:mm:ss", tooltipFormat: "DD-MM-YYYY HH:mm:ss", unit: "minute", displayFormats: { minute: "HH:mm:ss" } } },
+                y: { beginAtZero: false }
+            }
+        }
+    });
+
+    const cObj = {
+        chartId, chart,
+        wrapper: container.querySelector(".chart-wrapper"),
+        testPartInput: document.getElementById(`testPartInput${index}`),
+        setBtn: document.getElementById(`setPartBtn${index}`),
+        partDescEl: document.getElementById(`partDesc${index}`),
+        unitEl: document.getElementById(`unit${index}`),
+        testPart: "", checkedIcon: null
+    };
+
+    cObj.testPartInput.addEventListener("input", () => clearCheckedState(cObj));
+    cObj.setBtn.addEventListener("click", () => {
+        const newPart = cObj.testPartInput.value.trim();
+        if (!newPart) return;
+        if (charts.some(x => x !== cObj && x.testPart && x.testPart === newPart)) {
+            alert("Duplicate TestPart not allowed!");
+            cObj.testPartInput.value = "";
+            clearCheckedState(cObj);
+            return;
+        }
+        cObj.testPart = newPart;
+        cObj.chart.data.datasets.forEach(ds => ds.data = []);
+        cObj.chart.data.datasets[0].backgroundColor = [];
+        cObj.chart.update("none");
+        cObj.partDescEl.textContent = "";
+        cObj.unitEl.textContent = "";
+        setCheckedState(cObj);
+    });
+
+    return cObj;
+}
+
+// ============================
+// Build charts grid
+// ============================
+function buildCharts(numCharts, useDefaultParts = true) {
+    chartsGrid.innerHTML = "";
+    charts = [];
+    numCharts = Math.min(Math.max(numCharts, 1), defaultTestParts.length);
+    const canvasHeight = (numCharts <= 2) ? 500 : 350;
+    chartsGrid.style.gridTemplateColumns = (numCharts === 1) ? "1fr" : `repeat(${Math.min(numCharts, 2)}, minmax(300px, 1fr))`;
+    const partsToUse = useDefaultParts ? defaultTestParts.slice(0, numCharts) : Array(numCharts).fill("");
+    for (let i = 0; i < numCharts; i++) charts.push(createChartContainer(i, partsToUse[i], canvasHeight));
+}
+
+// ============================
+// Apply URL testParts
+// ============================
+function applyTestPartsFromUrl() {
+    const param = getQueryParam("testParts");
+    if (!param) return;
+    const parts = param.split(",").map(p => p.trim()).filter(p => p);
+    if (!parts.length) return;
+    document.getElementById("numChartsInput").value = parts.length;
+    buildCharts(parts.length, false);
+    parts.forEach((part, i) => {
+        const c = charts[i];
+        if (!c) return;
+        c.testPartInput.value = part;
+        c.testPart = part;
+        c.chart.data.datasets.forEach(ds => ds.data = []);
+        c.chart.data.datasets[0].backgroundColor = [];
+        c.chart.update("none");
+        setCheckedState(c);
+    });
+}
+
+// ============================
+// Fetch batch data
+// ============================
+async function fetchBatchData() {
+    const activeCharts = charts.filter(c => c.testPart);
+    if (!activeCharts.length) return;
+    const testParts = activeCharts.map(c => c.testPart).join(",");
+    const chartIds  = activeCharts.map(c => c.chartId).join(",");
+    try {
+        const res = await fetch(`@Url.Action("LISSPCRealTimeData", "")?testParts=${testParts}&chartIds=${chartIds}`);
+        if (res.status === 204) return;
+        const data = await res.json();
+        data.forEach(r => {
+            const c = charts.find(x => x.chartId === r.chartId);
+            if (!c) return;
+
+            const time = moment(r.Time, "DD-MM-YYYY HH:mm:ss").toDate();
+            const value = parseFloat(r.Value);
+
+            // Skip if time is older than the last point
+            const dataset = c.chart.data.datasets[0].data;
+            if (dataset.length > 0 && time <= dataset[dataset.length - 1].x) {
+                return;
+            }
+
+            c.partDescEl.textContent = r.partDesc || "";
+            c.unitEl.textContent = r.unit || "";
+
+            c.chart.data.datasets[0].data.push({ x: time, y: value });
+            c.chart.data.datasets[1].data.push({ x: time, y: r.lower });
+            c.chart.data.datasets[2].data.push({ x: time, y: r.upper });
+
+            // Keep max points
+            c.chart.data.datasets.forEach(ds => { if (ds.data.length > MAX_POINTS) ds.data.shift(); });
+
+            c.chart.update("none");
+        });
+
+    } catch (e) { console.error(e); }
+}
+
+// ============================
+// Init
+// ============================
+buildCharts(defaultTestParts.length, true);
+applyTestPartsFromUrl();
+setInterval(fetchBatchData, 30000);
+
+        document.getElementById("setNumChartsBtn").addEventListener("click", () => {
+            let num = parseInt(document.getElementById("numChartsInput").value);
+
+            if (isNaN(num) || num < 1) num = 1;       // minimum 1
+            if (num > 4) {                            // maximum 4
+                alert("Maximum 4 charts allowed!");
+                num = 4;
+                document.getElementById("numChartsInput").value = 4;
+            }
+
+            buildCharts(num, false);
+        });
+
+
+        function scheduleMidnightRefresh() {
+            const now = new Date();
+
+            // Next midnight (00:00:00)
+            const nextMidnight = new Date();
+            nextMidnight.setHours(24, 0, 0, 0);
+
+            const msUntilMidnight = nextMidnight - now;
+
+            console.log("Page will refresh in", msUntilMidnight / 1000, "seconds");
+
+            setTimeout(() => {
+                location.reload(); // same as F5
+            }, msUntilMidnight);
+        }
+
+        // Start schedule when page loads
+        scheduleMidnightRefresh();
+
+    </script>
+
+</body>
+</html>

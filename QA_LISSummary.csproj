@@ -116,6 +116,7 @@
     <Compile Include="Business_logic\LISSPCBS.cs" />
     <Compile Include="Business_logic\QASumBS.cs" />
     <Compile Include="Controllers\LISSPCController.cs" />
+    <Compile Include="Controllers\LISSPCRealTimeController.cs" />
     <Compile Include="Controllers\QASumController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -624,6 +625,7 @@
     <Content Include="Views\QASum\RealTimeChartsDbBatch.cshtml" />
     <Content Include="Views\LISSPC\GetDataAllTest.cshtml" />
     <Content Include="Views\LISSPC\LimitAdjust.cshtml" />
+    <Content Include="Views\LISSPCRealTime\RealTimeChartsDbBatch.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
