@@ -124,9 +124,52 @@ namespace QA_LISSummary.Controllers
 
             data.y = val.ToString();
         }
+        [Route("LISSPCRealTimePreload")]
+        public ActionResult GetPreloadData(string testParts, string chartIds, int count = 30)
+        {
+            if (string.IsNullOrWhiteSpace(testParts) || string.IsNullOrWhiteSpace(chartIds))
+                return new HttpStatusCodeResult(400);
+
+            var parts = testParts.Split(',').Select(p => p.Trim()).ToArray();
+            var charts = chartIds.Split(',').Select(c => c.Trim()).ToArray();
+
+            if (parts.Length != charts.Length)
+                return new HttpStatusCodeResult(400, "Mismatch between testParts and chartIds");
+
+            var allData = new List<object>();
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string part = parts[i];
+                string chartId = charts[i];
+
+                // fetch last 'count' records for this part
+                var data = LISSPC_BS.GetDataXYPreloadBatch(new[] { part }, count);
+
+                foreach (var d in data)
+                    ApplyLimitAdjust(d);
+
+                // Map the chartId properly
+                allData.AddRange(data.Select(d => new
+                {
+                    chartId = chartId,  // <-- use chartId here
+                    Time = d.label,
+                    Value = d.y,
+                    unit = d.unit,
+                    lower = d.lower,
+                    upper = d.upper,
+                    partDesc = d.partDesc
+                }));
+            }
+
+            return Json(allData, JsonRequestBehavior.AllowGet);
+        }
+
+
+
 
     }
 
-    
+
 
 }

@@ -66,11 +66,26 @@
         <label>Number of Charts (Max 4)</label>
         <input type="number" id="numChartsInput" min="1" max="4" value="4" />
         <button id="setNumChartsBtn">Apply</button>
+
+        <!-- NEW -->
+        <label>
+            <input type="checkbox" id="preloadToggle" checked />
+            Preload samples
+        </label>
+
+        <input type="number"
+               id="preloadCount"
+               value="30"
+               min="1"
+               max="200"
+               title="Number of samples before realtime" />
     </div>
+
 
     <div class="charts-grid" id="chartsGrid"></div>
 
     <script>
+const preloadState = {}; // chartId -> true/false
 const MAX_POINTS = 50;
 const chartsGrid = document.getElementById("chartsGrid");
 let charts = [];
@@ -100,7 +115,9 @@ function clearCheckedState(c) {
     c.testPart = "";
 }
 
-function getQueryParam(name) { return new URLSearchParams(window.location.search).get(name); }
+function getQueryParam(name) {
+    return new URLSearchParams(window.location.search).get(name);
+}
 
 // ============================
 // Create chart container
@@ -125,8 +142,8 @@ function createChartContainer(index, inputValue, canvasHeight) {
             <canvas id="canvas${index}"></canvas>
         </div>
     `;
-
     chartsGrid.appendChild(container);
+
     const ctx = document.getElementById(`canvas${index}`).getContext("2d");
     const chart = new Chart(ctx, {
         type: "line",
@@ -143,7 +160,15 @@ function createChartContainer(index, inputValue, canvasHeight) {
             animation: false,
             interaction: { mode: "nearest", intersect: false },
             scales: {
-                x: { type: "time", time: { parser: "DD-MM-YYYY HH:mm:ss", tooltipFormat: "DD-MM-YYYY HH:mm:ss", unit: "minute", displayFormats: { minute: "HH:mm:ss" } } },
+                x: {
+                    type: "time",
+                    time: {
+                        parser: "DD-MM-YYYY HH:mm:ss",
+                        tooltipFormat: "DD-MM-YYYY HH:mm:ss",
+                        unit: "minute",
+                        displayFormats: { minute: "HH:mm:ss" }
+                    }
+                },
                 y: { beginAtZero: false }
             }
         }
@@ -170,28 +195,32 @@ function createChartContainer(index, inputValue, canvasHeight) {
             return;
         }
         cObj.testPart = newPart;
+        preloadState[cObj.chartId] = false;
+
         cObj.chart.data.datasets.forEach(ds => ds.data = []);
         cObj.chart.data.datasets[0].backgroundColor = [];
-        cObj.chart.update("none");
+        cObj.chart.update();
         cObj.partDescEl.textContent = "";
         cObj.unitEl.textContent = "";
         setCheckedState(cObj);
+
+        preloadSamples();
     });
 
     return cObj;
 }
 
 // ============================
-// Build charts grid
+// Build charts
 // ============================
 function buildCharts(numCharts, useDefaultParts = true) {
     chartsGrid.innerHTML = "";
     charts = [];
     numCharts = Math.min(Math.max(numCharts, 1), defaultTestParts.length);
     const canvasHeight = (numCharts <= 2) ? 500 : 350;
-    chartsGrid.style.gridTemplateColumns = (numCharts === 1) ? "1fr" : `repeat(${Math.min(numCharts, 2)}, minmax(300px, 1fr))`;
-    const partsToUse = useDefaultParts ? defaultTestParts.slice(0, numCharts) : Array(numCharts).fill("");
-    for (let i = 0; i < numCharts; i++) charts.push(createChartContainer(i, partsToUse[i], canvasHeight));
+    chartsGrid.style.gridTemplateColumns = (numCharts === 1) ? "1fr" : `repeat(${Math.min(numCharts,2)}, minmax(300px,1fr))`;
+    const partsToUse = useDefaultParts ? defaultTestParts.slice(0,numCharts) : Array(numCharts).fill("");
+    for (let i=0;i<numCharts;i++) charts.push(createChartContainer(i, partsToUse[i], canvasHeight));
 }
 
 // ============================
@@ -203,100 +232,147 @@ function applyTestPartsFromUrl() {
     const parts = param.split(",").map(p => p.trim()).filter(p => p);
     if (!parts.length) return;
     document.getElementById("numChartsInput").value = parts.length;
-    buildCharts(parts.length, false);
-    parts.forEach((part, i) => {
+    buildCharts(parts.length,false);
+    parts.forEach((part,i) => {
         const c = charts[i];
         if (!c) return;
         c.testPartInput.value = part;
         c.testPart = part;
         c.chart.data.datasets.forEach(ds => ds.data = []);
         c.chart.data.datasets[0].backgroundColor = [];
-        c.chart.update("none");
+        c.chart.update();
         setCheckedState(c);
     });
 }
 
 // ============================
-// Fetch batch data
+// Preload historical data
+// ============================
+async function preloadSamples() {
+    if (!document.getElementById("preloadToggle").checked) return;
+
+    const count = parseInt(document.getElementById("preloadCount").value) || 30;
+    const preloadCharts = charts.filter(c => c.testPart && !preloadState[c.chartId]);
+    if (!preloadCharts.length) return;
+
+    const testParts = preloadCharts.map(c => c.testPart).join(",");
+    const chartIds = preloadCharts.map(c => c.chartId).join(",");
+
+    try {
+        const res = await fetch(`@Url.Action("LISSPCRealTimePreload","")?testParts=${testParts}&chartIds=${chartIds}&count=${count}`);
+        if (res.status === 204) return;
+
+        const data = await res.json();
+
+        // Clear old data
+        preloadCharts.forEach(c => c.chart.data.datasets.forEach(ds => ds.data = []));
+
+        data.forEach(r => {
+            const c = charts.find(x => x.chartId === r.chartId);
+            if (!c) return;
+            const time = r.Time;
+            const value = parseFloat(r.Value);
+            c.partDescEl.textContent = r.partDesc || "";
+            c.unitEl.textContent = r.unit || "";
+            c.chart.data.datasets[0].data.push({x:time,y:value});
+            c.chart.data.datasets[1].data.push({x:time,y:r.lower});
+            c.chart.data.datasets[2].data.push({x:time,y:r.upper});
+        });
+
+        // Limit points and update once
+        preloadCharts.forEach(c => {
+            c.chart.data.datasets.forEach(ds => { while(ds.data.length>MAX_POINTS) ds.data.shift(); });
+            preloadState[c.chartId] = true;
+            c.chart.update();
+        });
+
+        console.log("Preload finished for charts:", preloadCharts.map(c => c.chartId));
+    } catch(e) {
+        console.error("Preload error", e);
+    }
+}
+
+// ============================
+// Fetch realtime data
 // ============================
 async function fetchBatchData() {
     const activeCharts = charts.filter(c => c.testPart);
     if (!activeCharts.length) return;
-    const testParts = activeCharts.map(c => c.testPart).join(",");
-    const chartIds  = activeCharts.map(c => c.chartId).join(",");
+
+    const testParts = activeCharts.map(c=>c.testPart).join(",");
+    const chartIds = activeCharts.map(c=>c.chartId).join(",");
+
     try {
-        const res = await fetch(`@Url.Action("LISSPCRealTimeData", "")?testParts=${testParts}&chartIds=${chartIds}`);
-        if (res.status === 204) return;
+        const res = await fetch(`@Url.Action("LISSPCRealTimeData","")?testParts=${testParts}&chartIds=${chartIds}`);
+        if(res.status===204) return;
         const data = await res.json();
+
         data.forEach(r => {
             const c = charts.find(x => x.chartId === r.chartId);
             if (!c) return;
 
+            // Convert time string to Date
             const time = moment(r.Time, "DD-MM-YYYY HH:mm:ss").toDate();
             const value = parseFloat(r.Value);
 
-            // Skip if time is older than the last point
+            // Skip if time is older than last point OR same value & time
             const dataset = c.chart.data.datasets[0].data;
-            if (dataset.length > 0 && time <= dataset[dataset.length - 1].x) {
-                return;
+            if (dataset.length > 0) {
+                const lastPoint = dataset[dataset.length - 1];
+                const lastTime = new Date(lastPoint.x); // lastPoint.x might be string
+                if (time.getTime() === lastTime.getTime() && value === lastPoint.y) {
+                    return; // skip duplicate
+                }
             }
 
             c.partDescEl.textContent = r.partDesc || "";
             c.unitEl.textContent = r.unit || "";
-
             c.chart.data.datasets[0].data.push({ x: time, y: value });
             c.chart.data.datasets[1].data.push({ x: time, y: r.lower });
             c.chart.data.datasets[2].data.push({ x: time, y: r.upper });
 
-            // Keep max points
-            c.chart.data.datasets.forEach(ds => { if (ds.data.length > MAX_POINTS) ds.data.shift(); });
+            c.chart.data.datasets.forEach(ds => {
+                while (ds.data.length > MAX_POINTS) ds.data.shift();
+            });
 
-            c.chart.update("none");
+            c.chart.update();
         });
 
-    } catch (e) { console.error(e); }
+
+    } catch(e){ console.error(e); }
 }
 
 // ============================
 // Init
 // ============================
-buildCharts(defaultTestParts.length, true);
+buildCharts(defaultTestParts.length,true);
 applyTestPartsFromUrl();
-setInterval(fetchBatchData, 30000);
+setTimeout(preloadSamples,100);
+setInterval(fetchBatchData,30000);
 
-        document.getElementById("setNumChartsBtn").addEventListener("click", () => {
-            let num = parseInt(document.getElementById("numChartsInput").value);
+document.getElementById("preloadToggle").addEventListener("change",()=>{
+    if(!document.getElementById("preloadToggle").checked){
+        Object.keys(preloadState).forEach(k=>preloadState[k]=false);
+    }
+});
 
-            if (isNaN(num) || num < 1) num = 1;       // minimum 1
-            if (num > 4) {                            // maximum 4
-                alert("Maximum 4 charts allowed!");
-                num = 4;
-                document.getElementById("numChartsInput").value = 4;
-            }
+document.getElementById("setNumChartsBtn").addEventListener("click",()=>{
+    let num=parseInt(document.getElementById("numChartsInput").value);
+    if(isNaN(num)||num<1) num=1;
+    if(num>4){ alert("Maximum 4 charts allowed!"); num=4; document.getElementById("numChartsInput").value=4; }
+    buildCharts(num,false);
+});
 
-            buildCharts(num, false);
-        });
+function scheduleMidnightRefresh(){
+    const now = new Date();
+    const nextMidnight = new Date();
+    nextMidnight.setHours(24,0,0,0);
+    const msUntilMidnight = nextMidnight - now;
+    console.log("Page will refresh in",msUntilMidnight/1000,"seconds");
+    setTimeout(()=>{location.reload();},msUntilMidnight);
+}
 
-
-        function scheduleMidnightRefresh() {
-            const now = new Date();
-
-            // Next midnight (00:00:00)
-            const nextMidnight = new Date();
-            nextMidnight.setHours(24, 0, 0, 0);
-
-            const msUntilMidnight = nextMidnight - now;
-
-            console.log("Page will refresh in", msUntilMidnight / 1000, "seconds");
-
-            setTimeout(() => {
-                location.reload(); // same as F5
-            }, msUntilMidnight);
-        }
-
-        // Start schedule when page loads
-        scheduleMidnightRefresh();
-
+scheduleMidnightRefresh();
     </script>
 
 </body>
