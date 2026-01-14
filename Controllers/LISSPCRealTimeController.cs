@@ -1,11 +1,8 @@
 ﻿using QA_LISSummary.Business_logic;
 using QA_LISSummary.Models;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Web;
 using System.Web.Mvc;
 using static QA_LISSummary.Models.LISSPCModels;
 
@@ -32,14 +29,6 @@ namespace QA_LISSummary.Controllers
         {
             return View("RealTimeChartsDbBatch");
         }
-
-        // ===============================
-        // Thread-safe duplicate protection
-        // ===============================
-        private static readonly ConcurrentDictionary<string, (string Time, double Value)>
-            _lastSentByChart = new ConcurrentDictionary<string, (string, double)>();
-
-
 
         // ===============================
         // BATCH API (REAL-TIME)
@@ -111,12 +100,6 @@ namespace QA_LISSummary.Controllers
             return Json(response, JsonRequestBehavior.AllowGet);
         }
 
-        // -----------------------------
-        // In-memory caches
-        // -----------------------------
-        private static Dictionary<string, Tuple<string, double>> DuplicateCache = new Dictionary<string, Tuple<string, double>>();
-        private static Dictionary<string, DateTime> CacheLastTimestamp = new Dictionary<string, DateTime>();
-
 
         // ===============================
         // Helpers
@@ -142,16 +125,6 @@ namespace QA_LISSummary.Controllers
             data.y = val.ToString();
         }
 
-        private bool IsDuplicate(string chartId, string time, double value)
-        {
-            var last = _lastSentByChart.GetOrAdd(chartId, (time, value));
-
-            if (last.Time == time && last.Value == value)
-                return true;
-
-            _lastSentByChart[chartId] = (time, value);
-            return false;
-        }
     }
 
     

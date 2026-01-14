@@ -353,9 +353,7 @@ namespace QA_LISSummary.Controllers
 
         // Helpers
         // ===============================
-        private static Dictionary<string, Tuple<string, double>> DuplicateCache = new Dictionary<string, Tuple<string, double>>();
-        private static Dictionary<string, DateTime> CacheLastTimestamp = new Dictionary<string, DateTime>();
-        private static readonly ConcurrentDictionary<string, (string Time, double Value)> _lastSentByChart = new ConcurrentDictionary<string, (string, double)>();
+  
         private void ApplyLimitAdjust(List<XY_LABEL_CHARTS_CLEAN_STR> dataList, string part, string TaskNo)
         {
             if (dataList == null || dataList.Count == 0) return;
@@ -395,36 +393,6 @@ namespace QA_LISSummary.Controllers
                     data.y = y.ToString();
                 }
             }
-        }
-        private double ApplyLimitAdjustOne(double data, LIMIT_ADJUST limitAdj)
-        {
-            if (data > 0)
-            {
-                double y = data;
-                double val = Convert.ToDouble(limitAdj.limit_adjust_value);
-
-                switch (limitAdj.limit_adjust_type)
-                {
-                    case "MUL": y *= val; break;
-                    case "DIV": y /= val; break;
-                    case "PLUS": y += val; break;
-                    case "MINUS": y -= val; break;
-                }
-
-                return y;
-            }
-            else
-                return 0;
-        }
-        private bool IsDuplicate(string chartId, string time, double value)
-        {
-            var last = _lastSentByChart.GetOrAdd(chartId, (time, value));
-
-            if (last.Time == time && last.Value == value)
-                return true;
-
-            _lastSentByChart[chartId] = (time, value);
-            return false;
         }
         // ===============================
     }
