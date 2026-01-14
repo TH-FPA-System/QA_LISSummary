@@ -69,16 +69,17 @@
 
         <!-- NEW -->
         <label>
-            <input type="checkbox" id="preloadToggle" checked />
+            <input type="checkbox" id="preloadToggle" />
             Preload samples
         </label>
 
         <input type="number"
                id="preloadCount"
-               value="30"
+               value="5"
                min="1"
                max="200"
                title="Number of samples before realtime" />
+
     </div>
 
 
@@ -232,6 +233,26 @@ function applyTestPartsFromUrl() {
     const parts = param.split(",").map(p => p.trim()).filter(p => p);
     if (!parts.length) return;
     document.getElementById("numChartsInput").value = parts.length;
+
+    // Apply URL Preload parameter
+    const preloadParam = getQueryParam("Preload");
+    if (preloadParam !== null) {
+        const preloadCountInput = document.getElementById("preloadCount");
+        const preloadToggle = document.getElementById("preloadToggle");
+
+        const count = parseInt(preloadParam);
+        if (!isNaN(count) && count > 0) {
+            preloadCountInput.value = count;
+            preloadToggle.checked = true;
+        } else {
+            preloadToggle.checked = false;
+        }
+    } else {
+        // No Preload param → keep unchecked
+        document.getElementById("preloadToggle").checked = false;
+    }
+
+
     buildCharts(parts.length,false);
     parts.forEach((part,i) => {
         const c = charts[i];
@@ -372,7 +393,16 @@ function scheduleMidnightRefresh(){
     setTimeout(()=>{location.reload();},msUntilMidnight);
 }
 
-scheduleMidnightRefresh();
+        scheduleMidnightRefresh();
+
+        // ============================
+        // Read URL parameters
+        // ============================
+        function getUrlParam(name) {
+            return new URLSearchParams(window.location.search).get(name);
+        }
+
+
     </script>
 
 </body>

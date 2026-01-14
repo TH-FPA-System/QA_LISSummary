@@ -125,7 +125,7 @@ namespace QA_LISSummary.Controllers
             data.y = val.ToString();
         }
         [Route("LISSPCRealTimePreload")]
-        public ActionResult GetPreloadData(string testParts, string chartIds, int count = 30)
+        public ActionResult GetPreloadData(string testParts, string chartIds, int count = 0)
         {
             if (string.IsNullOrWhiteSpace(testParts) || string.IsNullOrWhiteSpace(chartIds))
                 return new HttpStatusCodeResult(400);
