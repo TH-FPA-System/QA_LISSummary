@@ -61,16 +61,39 @@
     </style>
 </head>
 <body>
+    <!-- Toggle Button -->
+    <button id="toggleCardBtn"
+            style="
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        ">
+        Show Settings
+    </button>
 
-    <div id="chartConfig">
+    <!-- Chart Config Card (hidden by default) -->
+    <div id="chartConfig"
+         style="
+         display: none;
+         flex-wrap: wrap;
+         align-items: center;
+         gap: 16px;
+         padding: 16px 20px;
+         background-color: #ffffff;
+         border-radius: 10px;
+         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+         max-width: 650px;
+         margin-bottom: 20px;
+     ">
         <label>Number of Charts (Max 4)</label>
         <input type="number" id="numChartsInput" min="1" max="4" value="4" />
-        <button id="setNumChartsBtn">Apply</button>
 
-        <!-- NEW -->
         <label>
-            <input type="checkbox" id="preloadToggle" />
-            Preload samples
+            <input type="checkbox" id="preloadToggle" /> Preload samples
         </label>
 
         <input type="number"
@@ -80,7 +103,31 @@
                max="200"
                title="Number of samples before realtime" />
 
+        <button id="setNumChartsBtn">Apply</button>
     </div>
+
+    <script>
+        const toggleBtn = document.getElementById("toggleCardBtn");
+        const card = document.getElementById("chartConfig");
+
+        // Card is hidden by default
+        card.style.display = "none";
+
+        toggleBtn.addEventListener("click", () => {
+            if (card.style.display === "flex") {
+                card.style.display = "none";
+                toggleBtn.textContent = "Show Settings";
+            } else {
+                card.style.display = "flex";
+                toggleBtn.textContent = "Hide Settings";
+            }
+        });
+
+        // Ensure proper flex layout when showing
+        card.style.flexWrap = "wrap";
+        card.style.alignItems = "center";
+    </script>
+
 
 
     <div class="charts-grid" id="chartsGrid"></div>
