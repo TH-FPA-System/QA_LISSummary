@@ -158,12 +158,15 @@
                 <select class="form-select form-select-sm" name="DropDownS">
                     <option value="@ViewBag.DropdownS" selected>
                         @(ViewBag.DropdownS == null ? "Please select part-test.." :
-                  ViewBag.DropdownS == "ALL" ? "Part-Test" :
-                  ViewBag.PartDesc)
+              ViewBag.DropdownS == "ALL" ? "Part-Test" :
+              ViewBag.PartDesc)
                     </option>
                     @foreach (var str in ViewBag.Part_Array)
                     {
-                        <option value="@str.part">@str.part_desc (@str.part)</option>
+                        var highlightStyle = str.data_source != "BASE" ? "background-color: #ffebcc; color: #b33;" : "";
+                        <option value="@str.part" style="@highlightStyle">
+                            @str.part_desc (@str.part)
+                        </option>
                     }
                 </select>
             </div>

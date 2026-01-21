@@ -134,6 +134,7 @@ namespace QA_LISSummary.Controllers
             {
                 if (Part_Test_Limits[i].part == DropDownS)
                 {
+                    ViewBag.BOMSource = Part_Test_Limits[i].data_source;
                     ViewBag.DropdownS = Part_Test_Limits[i].part;
                     ViewBag.PartDesc = Part_Test_Limits[i].part_desc;
                     ViewBag.LowerLim = Part_Test_Limits[i].lower;
