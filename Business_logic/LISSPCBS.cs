@@ -18,32 +18,71 @@ namespace QA_LISSummary.Business_logic
             database = new Database(Database.Source.REDBOW, Database.Catalog.Thailis);
         }
 
+
         // Query Limits 
         public List<PART_TEST_LIMITS> GetPartTestLimitsByTaskAndTestResultLIS(string taskNo)
         {
             const string query = @"
-        SELECT p.part,
-               p.[description] AS part_desc,
-               pt.lower_limit_value,
-               pt.upper_limit_value
-        FROM part p
-        INNER JOIN part_test pt ON pt.part = p.part
-        INNER JOIN part_issue pi ON pi.part = p.part
-        INNER JOIN test_result_clean trl ON trl.test_part = p.part
-        WHERE trl.task = @TaskNo
-          AND pi.part_issue = pt.part_issue
-          AND pi.eff_start <= GETDATE()
-          AND pi.eff_close >= GETDATE()
-        GROUP BY p.part, p.[description], pt.lower_limit_value, pt.upper_limit_value";
+;WITH AllLimits AS (
+    -- ========= BASE =========
+    SELECT
+        'BASE' AS data_source,
+        p.part,
+        p.[description] AS part_desc,
+        pt.lower_limit_value,
+        pt.upper_limit_value,
+        1 AS priority
+    FROM part p
+    INNER JOIN part_test pt ON pt.part = p.part
+    INNER JOIN part_issue pi ON pi.part = p.part
+    INNER JOIN test_result_clean trl ON trl.test_part = p.part
+    WHERE trl.task = @TaskNo
+      AND pi.part_issue = pt.part_issue
+      AND pi.eff_start <= GETDATE()
+      AND pi.eff_close >= GETDATE()
 
-            return ExecuteQuery<PART_TEST_LIMITS>(query, row => new PART_TEST_LIMITS
-            {
-                part = GetString(row, "part"),
-                part_desc = GetString(row, "part_desc"),
-                lower = GetString(row, "lower_limit_value"),
-                upper = GetString(row, "upper_limit_value")
-            },
-            new SqlParameter("@TaskNo", taskNo));
+    UNION ALL
+
+    -- ========= SPAREB =========
+    SELECT
+        'SPAREB' AS data_source,
+        p.part,
+        p.[description] AS part_desc,
+        pt.lower_limit_value,
+        pt.upper_limit_value,
+        2 AS priority
+    FROM LISBOM_part p
+    INNER JOIN LISBOM_part_test pt ON pt.part = p.part
+    INNER JOIN LISBOM_part_issue pi ON pi.part = p.part
+    INNER JOIN test_result_clean trl ON trl.test_part = p.part
+    WHERE trl.task = @TaskNo
+      AND pi.part_issue = pt.part_issue
+      AND pi.eff_start <= GETDATE()
+      AND pi.eff_close >= GETDATE()
+)
+, Deduped AS (
+    SELECT *,
+           ROW_NUMBER() OVER (PARTITION BY part ORDER BY priority) AS rn
+    FROM AllLimits
+)
+SELECT data_source, part, part_desc, lower_limit_value, upper_limit_value
+FROM Deduped
+WHERE rn = 1
+ORDER BY part;
+";
+
+            return ExecuteQuery<PART_TEST_LIMITS>(
+                query,
+                row => new PART_TEST_LIMITS
+                {
+                    data_source = GetString(row, "data_source"), // BASE or SPAREB
+                    part = GetString(row, "part"),
+                    part_desc = GetString(row, "part_desc"),
+                    lower = GetString(row, "lower_limit_value"),
+                    upper = GetString(row, "upper_limit_value")
+                },
+                new SqlParameter("@TaskNo", taskNo)
+            );
         }
 
         public List<PART_TEST_LIMITS> GetPartTestLimitsByPartTestAndTestResultLIS(string partTest)
@@ -575,14 +614,15 @@ WHERE test_part = @Part
         //CREATE TYPE dbo.TVP_TestParts AS TABLE(test_part NVARCHAR(50) PRIMARY KEY);
         //CREATE TYPE dbo.TVP_LastTimestamps AS TABLE(test_part NVARCHAR(50) PRIMARY KEY, last_date DATETIME2);
         public List<XY_LABEL_CHARTS_STR_REALTIME> GetDataXYRealTimeBatch(
-            string[] testParts,
-            Dictionary<string, DateTime> lastTimestamps = null)
+    string[] testParts,
+    Dictionary<string, DateTime> lastTimestamps = null)
         {
             var result = new List<XY_LABEL_CHARTS_STR_REALTIME>();
             if (testParts == null || testParts.Length == 0)
                 return result;
 
-            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+            System.Net.ServicePointManager.SecurityProtocol =
+                System.Net.SecurityProtocolType.Tls12;
 
             var distinctParts = testParts
                 .Where(p => !string.IsNullOrWhiteSpace(p))
@@ -594,64 +634,122 @@ WHERE test_part = @Part
                 return result;
 
             // -----------------------------
-            // DataTable for TVP: TestParts
+            // TVP: TestParts
             var dtTestParts = new DataTable();
             dtTestParts.Columns.Add("test_part", typeof(string));
             foreach (var p in distinctParts)
                 dtTestParts.Rows.Add(p);
 
-            // DataTable for TVP: LastTimestamps
+            // -----------------------------
+            // TVP: LastTimestamps
             var dtLastTimestamps = new DataTable();
             dtLastTimestamps.Columns.Add("test_part", typeof(string));
             dtLastTimestamps.Columns.Add("last_date", typeof(DateTime));
 
-            if (lastTimestamps != null && lastTimestamps.Count > 0)
+            if (lastTimestamps != null)
             {
                 foreach (var kv in lastTimestamps)
                     dtLastTimestamps.Rows.Add(kv.Key, kv.Value);
             }
-            // If empty, still pass empty table (cannot be null/DBNull)
 
             string sql = @"
-SELECT
-    r.test_part,
-    r.test_value,
-    r.date_tested,
-    r.test_unit,
-    p.[description] AS part_desc,
-    pt.upper_limit_value AS USL,
-    pt.lower_limit_value AS LSL,
-    la.limit_adjust_value,
-    la.limit_adjust_type
-FROM @TestParts tp
-INNER JOIN part p
-    ON p.part = tp.test_part
-INNER JOIN part_test pt
-    ON pt.part = p.part
-OUTER APPLY (
-    SELECT TOP (1)
+;WITH LatestBase AS (
+    SELECT
         r.test_part,
         r.test_value,
         r.date_tested,
-        r.test_unit
-    FROM test_result_clean r
-    LEFT JOIN @LastTimestamps lt
-        ON lt.test_part = r.test_part
-    WHERE r.test_part = tp.test_part
-      AND (lt.last_date IS NULL OR r.date_tested > lt.last_date)
-    ORDER BY r.date_tested DESC
-) r
-LEFT JOIN test_result_lis_limit_adjust la
-    ON la.test_part = r.test_part
-WHERE r.date_tested IS NOT NULL
-  AND EXISTS (
-      SELECT 1
-      FROM part_issue pi
-      WHERE pi.part = p.part
-        AND pi.part_issue = pt.part_issue
-        AND pi.eff_start <= SYSDATETIME()
-        AND pi.eff_close >= SYSDATETIME()
-  );";
+        r.test_unit,
+        p.[description] AS part_desc,
+        pt.upper_limit_value AS USL,
+        pt.lower_limit_value AS LSL,
+        la.limit_adjust_value,
+        la.limit_adjust_type
+    FROM @TestParts tp
+    OUTER APPLY (
+        SELECT TOP (1)
+            r.test_part,
+            r.test_value,
+            r.date_tested,
+            r.test_unit
+        FROM test_result_clean r
+        LEFT JOIN @LastTimestamps lt
+            ON lt.test_part = r.test_part
+        WHERE r.test_part = tp.test_part
+          AND (lt.last_date IS NULL OR r.date_tested > lt.last_date)
+        ORDER BY r.date_tested DESC
+    ) r
+    INNER JOIN part p
+        ON p.part = tp.test_part
+    INNER JOIN part_test pt
+        ON pt.part = p.part
+    LEFT JOIN test_result_lis_limit_adjust la
+        ON la.test_part = r.test_part
+    WHERE EXISTS (
+        SELECT 1
+        FROM part_issue pi
+        WHERE pi.part = p.part
+          AND pi.part_issue = pt.part_issue
+          AND pi.eff_start <= SYSDATETIME()
+          AND pi.eff_close >= SYSDATETIME()
+    )
+),
+LatestSpare AS (
+    SELECT
+        r.test_part,
+        r.test_value,
+        r.date_tested,
+        r.test_unit,
+        p.[description] AS part_desc,
+        pt.upper_limit_value AS USL,
+        pt.lower_limit_value AS LSL,
+        la.limit_adjust_value,
+        la.limit_adjust_type
+    FROM @TestParts tp
+    OUTER APPLY (
+        SELECT TOP (1)
+            r.test_part,
+            r.test_value,
+            r.date_tested,
+            r.test_unit
+        FROM test_result_clean r
+        LEFT JOIN @LastTimestamps lt
+            ON lt.test_part = r.test_part
+        WHERE r.test_part = tp.test_part
+          AND (lt.last_date IS NULL OR r.date_tested > lt.last_date)
+        ORDER BY r.date_tested DESC
+    ) r
+    INNER JOIN LISBOM_part p
+        ON p.part = tp.test_part
+    INNER JOIN LISBOM_part_test pt
+        ON pt.part = p.part
+    LEFT JOIN test_result_lis_limit_adjust la
+        ON la.test_part = r.test_part
+    WHERE EXISTS (
+        SELECT 1
+        FROM LISBOM_part_issue pi
+        WHERE pi.part = p.part
+          AND pi.part_issue = pt.part_issue
+          AND pi.eff_start <= SYSDATETIME()
+          AND pi.eff_close >= SYSDATETIME()
+    )
+),
+AllSources AS (
+    SELECT 1 AS priority, 'BASE' AS data_source, * FROM LatestBase
+    UNION ALL
+    SELECT 2 AS priority, 'SPAREB' AS data_source, * FROM LatestSpare
+),
+Deduped AS (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY test_part
+               ORDER BY priority
+           ) AS rn
+    FROM AllSources
+)
+SELECT *
+FROM Deduped
+WHERE rn = 1;
+";
 
             using (var conn = new SqlConnection(database.Connection.ConnectionString))
             {
@@ -660,31 +758,22 @@ WHERE r.date_tested IS NOT NULL
                 {
                     cmd.CommandType = CommandType.Text;
 
-                    // TVP: TestParts
-                    var tvpTestParts = new SqlParameter("@TestParts", SqlDbType.Structured)
+                    cmd.Parameters.Add(new SqlParameter("@TestParts", SqlDbType.Structured)
                     {
                         TypeName = "dbo.TVP_TestParts",
                         Value = dtTestParts
-                    };
-                    cmd.Parameters.Add(tvpTestParts);
+                    });
 
-                    // TVP: LastTimestamps (empty table if no values)
-                    var tvpLastTimestamps = new SqlParameter("@LastTimestamps", SqlDbType.Structured)
+                    cmd.Parameters.Add(new SqlParameter("@LastTimestamps", SqlDbType.Structured)
                     {
                         TypeName = "dbo.TVP_LastTimestamps",
                         Value = dtLastTimestamps
-                    };
-                    cmd.Parameters.Add(tvpLastTimestamps);
+                    });
 
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            if (reader.IsDBNull(reader.GetOrdinal("date_tested")) ||
-                                reader.IsDBNull(reader.GetOrdinal("test_value")) ||
-                                reader.IsDBNull(reader.GetOrdinal("test_part")))
-                                continue;
-
                             DateTime dateTested = reader.GetDateTime(reader.GetOrdinal("date_tested"));
                             double testValue = reader.GetDouble(reader.GetOrdinal("test_value"));
 
@@ -700,7 +789,8 @@ WHERE r.date_tested IS NOT NULL
                                 lower = reader["LSL"] != DBNull.Value ? Convert.ToDouble(reader["LSL"]) : 0,
                                 limit_adjust_value = reader["limit_adjust_value"]?.ToString()?.Trim() ?? "",
                                 limit_adjust_type = reader["limit_adjust_type"]?.ToString()?.Trim() ?? "",
-                                date_tested = dateTested
+                                date_tested = dateTested,
+                                data_source = reader["data_source"]?.ToString()
                             });
                         }
                     }
@@ -709,10 +799,9 @@ WHERE r.date_tested IS NOT NULL
 
             return result;
         }
-
         public List<XY_LABEL_CHARTS_STR_REALTIME> GetDataXYPreloadBatch(
-         string[] testParts,
-         int preloadCount)
+    string[] testParts,
+    int preloadCount)
         {
             var result = new List<XY_LABEL_CHARTS_STR_REALTIME>();
             if (testParts == null || testParts.Length == 0 || preloadCount <= 0)
@@ -724,13 +813,17 @@ WHERE r.date_tested IS NOT NULL
                 .Distinct()
                 .ToArray();
 
+            if (distinctParts.Length == 0)
+                return result;
+
+            // TVP: TestParts
             var dtTestParts = new DataTable();
             dtTestParts.Columns.Add("test_part", typeof(string));
             foreach (var p in distinctParts)
                 dtTestParts.Rows.Add(p);
 
             string sql = @"
-WITH RankedResults AS (
+;WITH LatestBase AS (
     SELECT
         r.test_part,
         r.test_value,
@@ -741,17 +834,20 @@ WITH RankedResults AS (
         pt.lower_limit_value AS LSL,
         la.limit_adjust_value,
         la.limit_adjust_type,
-        ROW_NUMBER() OVER (
-            PARTITION BY r.test_part
-            ORDER BY r.date_tested DESC
-        ) AS rn
-    FROM test_result_clean r
-    INNER JOIN @TestParts tp
-        ON tp.test_part = r.test_part
-    INNER JOIN part p
-        ON p.part = r.test_part
-    INNER JOIN part_test pt
-        ON pt.part = p.part
+        ROW_NUMBER() OVER (PARTITION BY r.test_part ORDER BY r.date_tested DESC) AS rn
+    FROM @TestParts tp
+    OUTER APPLY (
+        SELECT TOP (@PreloadCount)
+            r.test_part,
+            r.test_value,
+            r.date_tested,
+            r.test_unit
+        FROM test_result_clean r
+        WHERE r.test_part = tp.test_part
+        ORDER BY r.date_tested DESC
+    ) r
+    INNER JOIN part p ON p.part = tp.test_part
+    INNER JOIN part_test pt ON pt.part = p.part
     LEFT JOIN test_result_lis_limit_adjust la
         ON la.test_part = r.test_part
     WHERE EXISTS (
@@ -762,10 +858,59 @@ WITH RankedResults AS (
           AND pi.eff_start <= SYSDATETIME()
           AND pi.eff_close >= SYSDATETIME()
     )
+),
+LatestSpare AS (
+    SELECT
+        r.test_part,
+        r.test_value,
+        r.date_tested,
+        r.test_unit,
+        p.[description] AS part_desc,
+        pt.upper_limit_value AS USL,
+        pt.lower_limit_value AS LSL,
+        la.limit_adjust_value,
+        la.limit_adjust_type,
+        ROW_NUMBER() OVER (PARTITION BY r.test_part ORDER BY r.date_tested DESC) AS rn
+    FROM @TestParts tp
+    OUTER APPLY (
+        SELECT TOP (@PreloadCount)
+            r.test_part,
+            r.test_value,
+            r.date_tested,
+            r.test_unit
+        FROM test_result_clean r
+        WHERE r.test_part = tp.test_part
+        ORDER BY r.date_tested DESC
+    ) r
+    INNER JOIN LISBOM_part p ON p.part = tp.test_part
+    INNER JOIN LISBOM_part_test pt ON pt.part = p.part
+    LEFT JOIN test_result_lis_limit_adjust la
+        ON la.test_part = r.test_part
+    WHERE EXISTS (
+        SELECT 1
+        FROM LISBOM_part_issue pi
+        WHERE pi.part = p.part
+          AND pi.part_issue = pt.part_issue
+          AND pi.eff_start <= SYSDATETIME()
+          AND pi.eff_close >= SYSDATETIME()
+    )
+),
+AllSources AS (
+    SELECT 1 AS priority, 'BASE' AS data_source, * FROM LatestBase
+    UNION ALL
+    SELECT 2 AS priority, 'SPAREB' AS data_source, * FROM LatestSpare
+),
+Deduped AS (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY test_part
+               ORDER BY priority, rn
+           ) AS final_rn
+    FROM AllSources
 )
 SELECT *
-FROM RankedResults
-WHERE rn <= @PreloadCount
+FROM Deduped
+WHERE final_rn <= @PreloadCount
 ORDER BY test_part, date_tested ASC;
 ";
 
@@ -774,6 +919,8 @@ ORDER BY test_part, date_tested ASC;
                 conn.Open();
                 using (var cmd = new SqlCommand(sql, conn))
                 {
+                    cmd.CommandType = CommandType.Text;
+
                     cmd.Parameters.Add(new SqlParameter("@TestParts", SqlDbType.Structured)
                     {
                         TypeName = "dbo.TVP_TestParts",
@@ -801,7 +948,8 @@ ORDER BY test_part, date_tested ASC;
                                 lower = reader["LSL"] != DBNull.Value ? Convert.ToDouble(reader["LSL"]) : 0,
                                 limit_adjust_value = reader["limit_adjust_value"]?.ToString()?.Trim() ?? "",
                                 limit_adjust_type = reader["limit_adjust_type"]?.ToString()?.Trim() ?? "",
-                                date_tested = dateTested
+                                date_tested = dateTested,
+                                data_source = reader["data_source"]?.ToString()
                             });
                         }
                     }
@@ -810,7 +958,6 @@ ORDER BY test_part, date_tested ASC;
 
             return result;
         }
-
 
 
     }

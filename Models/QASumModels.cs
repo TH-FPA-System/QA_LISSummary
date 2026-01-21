@@ -61,6 +61,7 @@ namespace QA_LISSummary.Models
         {
         }
 
+        public string data_source { get; set; } = "";
         public string x { get; set; } = "0";
         public string y { get; set; } = "0";
         public string label { get; set; } = "0";
@@ -154,7 +155,7 @@ namespace QA_LISSummary.Models
         public PART_TEST_LIMITS()
         {
         }
-
+        public string data_source { get; set; } // BASE / BOMLIS
         public string part { get; set; } = "0";
         public string part_desc { get; set; } = "0";
         public string lower { get; set; } = "0";    
