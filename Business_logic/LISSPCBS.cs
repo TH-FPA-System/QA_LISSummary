@@ -411,22 +411,26 @@ ORDER BY tr.date_tested ASC;;
 
             return result;
         }
-    public List<XY_LABEL_CHARTS_CLEAN_STR> GetDataXY_Avg(
-    DateTime startDate,
-    DateTime endDate,
-    string PartNo,
-    string Market,
-    string TaskNo,
-    string ModelName,
-    string DataSource)
-{
-    DataTable tmpTable = new DataTable();
-    List<XY_LABEL_CHARTS_CLEAN_STR> result = new List<XY_LABEL_CHARTS_CLEAN_STR>();
+        public List<XY_LABEL_CHARTS_CLEAN_STR> GetDataXY_Avg(
+            DateTime startDate,
+            DateTime endDate,
+            string PartNo,
+            string Market,
+            string TaskNo,
+            string ModelName,
+            string DataSource)
+        {
+            DataTable tmpTable = new DataTable();
+            List<XY_LABEL_CHARTS_CLEAN_STR> result = new List<XY_LABEL_CHARTS_CLEAN_STR>();
 
-    if (string.IsNullOrEmpty(PartNo))
-        PartNo = "";
+            if (string.IsNullOrEmpty(PartNo))
+                PartNo = "";
 
-    string query = @"
+            string query = "";
+
+            if (DataSource == "BASE" || DataSource == "LISBOM")
+            {
+                query = @"
 WITH AvgData AS
 (
     SELECT
@@ -452,32 +456,66 @@ SELECT
 FROM AvgData
 ORDER BY condate;
 ";
+            }
+            else if (DataSource == "LISMAP")
+            {
+                query = @"
+WITH AvgData AS
+(
+    SELECT
+        FORMAT(tr.date_tested, 'MMdd') AS condate,
+        AVG(CAST(tr.test_value AS float)) AS avg_test_value,
+        MIN(tr.date_tested) AS date_tested,
+        MAX(tr.test_unit) AS test_unit
+    FROM test_result_clean tr
+    INNER JOIN LISBOM_Part_Map pm 
+        ON pm.part = tr.test_part
+       AND pm.store_location = tr.store_location
+    WHERE pm.lisbom_part = @PartNo
+      AND tr.date_tested >= @StartDate
+      AND tr.date_tested < DATEADD(day, 1, @EndDate)
+    GROUP BY FORMAT(tr.date_tested, 'MMdd')
+)
+SELECT
+    ROW_NUMBER() OVER (ORDER BY condate) AS RUNNO,
+    0 AS sec,
+    avg_test_value,
+    date_tested,
+    condate,
+    test_unit,
+    NULL AS test_info1,
+    NULL AS test_info2
+FROM AvgData
+ORDER BY condate;
+";
+            }
 
-    using (SqlCommand cmd = new SqlCommand(query, database.Connection))
-    {
-        cmd.Parameters.AddWithValue("@PartNo", PartNo);
-        cmd.Parameters.AddWithValue("@StartDate", startDate);
-        cmd.Parameters.AddWithValue("@EndDate", endDate);
+            using (SqlCommand cmd = new SqlCommand(query, database.Connection))
+            {
+                cmd.Parameters.AddWithValue("@PartNo", PartNo);
+                cmd.Parameters.AddWithValue("@StartDate", startDate);
+                cmd.Parameters.AddWithValue("@EndDate", endDate);
 
-        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-        {
-            adapter.Fill(tmpTable);
+                using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+                {
+                    adapter.Fill(tmpTable);
+                }
+            }
+
+            foreach (DataRow row in tmpTable.Rows)
+            {
+                result.Add(new XY_LABEL_CHARTS_CLEAN_STR
+                {
+                    label = GetString(row, "condate"),
+                    x = GetString(row, "condate"),
+                    y = GetString(row, "avg_test_value"),
+                    test_unit = GetString(row, "test_unit"),
+                    showverticalline = "1"
+                });
+            }
+
+            return result;
         }
-    }
-
-    foreach (DataRow row in tmpTable.Rows)
-    {
-        result.Add(new XY_LABEL_CHARTS_CLEAN_STR
-        {
-            label = GetString(row, "condate"),
-            x = GetString(row, "condate"),
-            y = GetString(row, "avg_test_value"),
-            showverticalline = "1"
-        });
-    }
-
-    return result;
-}
 
 
 
