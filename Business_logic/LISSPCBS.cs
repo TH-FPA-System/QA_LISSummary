@@ -19,7 +19,7 @@ namespace QA_LISSummary.Business_logic
         }
 
 
-        // Query Limits 
+        // Query Limits (BASE priority, SPAREB fallback, no duplicate parts)
         public List<PART_TEST_LIMITS> GetPartTestLimitsByTaskAndTestResultLIS(string taskNo)
         {
             const string query = @"
@@ -35,17 +35,21 @@ namespace QA_LISSummary.Business_logic
     FROM part p
     INNER JOIN part_test pt ON pt.part = p.part
     INNER JOIN part_issue pi ON pi.part = p.part
-    INNER JOIN test_result_clean trl ON trl.test_part = p.part
-    WHERE trl.task = @TaskNo
-      AND pi.part_issue = pt.part_issue
+    WHERE pi.part_issue = pt.part_issue
       AND pi.eff_start <= GETDATE()
       AND pi.eff_close >= GETDATE()
+      AND EXISTS (
+          SELECT 1
+          FROM test_result_clean trl
+          WHERE trl.test_part = p.part
+            AND trl.task = @TaskNo
+      )
 
     UNION ALL
 
-    -- ========= SPAREB =========
+    -- ========= LISBOM =========
     SELECT
-        'SPAREB' AS data_source,
+        'LISBOM' AS data_source,
         p.part,
         p.[description] AS part_desc,
         pt.lower_limit_value,
@@ -54,28 +58,55 @@ namespace QA_LISSummary.Business_logic
     FROM LISBOM_part p
     INNER JOIN LISBOM_part_test pt ON pt.part = p.part
     INNER JOIN LISBOM_part_issue pi ON pi.part = p.part
-    INNER JOIN test_result_clean trl ON trl.test_part = p.part
-    WHERE trl.task = @TaskNo
-      AND pi.part_issue = pt.part_issue
+    WHERE pi.part_issue = pt.part_issue
       AND pi.eff_start <= GETDATE()
       AND pi.eff_close >= GETDATE()
+      AND EXISTS (
+          SELECT 1
+          FROM test_result_clean trl
+          WHERE trl.test_part = p.part
+            AND trl.task = @TaskNo
+      )
+       UNION ALL
+
+    -- ========= LISMAP =========
+    SELECT
+        'LISMAP' AS data_source,
+        pm.lisbom_part,
+        p.[description] AS part_desc,
+        pt.lower_limit_value,
+        pt.upper_limit_value,
+        2 AS priority
+    FROM LISBOM_part p
+ 
+    INNER JOIN LISBOM_part_issue pi ON pi.part = p.part
+    INNER JOIN LISBOM_Part_Map pm ON pm.lisbom_part = p.part
+    INNER JOIN LISBOM_part_test pt ON pt.part = pm.lisbom_part
+    WHERE pi.part_issue = pt.part_issue
+      AND pi.eff_start <= GETDATE()
+      AND pi.eff_close >= GETDATE()
+      AND EXISTS (
+          SELECT 1
+          FROM test_result_clean trl
+           WHERE trl.test_part = pm.part
+            AND trl.task = @TaskNo
+      )
 )
-, Deduped AS (
-    SELECT *,
-           ROW_NUMBER() OVER (PARTITION BY part ORDER BY priority) AS rn
-    FROM AllLimits
-)
-SELECT data_source, part, part_desc, lower_limit_value, upper_limit_value
-FROM Deduped
-WHERE rn = 1
-ORDER BY part;
+SELECT
+    data_source,
+    part,
+    part_desc,
+    lower_limit_value,
+    upper_limit_value
+FROM AllLimits
+ORDER BY part, priority;
 ";
 
             return ExecuteQuery<PART_TEST_LIMITS>(
                 query,
                 row => new PART_TEST_LIMITS
                 {
-                    data_source = GetString(row, "data_source"), // BASE or SPAREB
+                    data_source = GetString(row, "data_source"),
                     part = GetString(row, "part"),
                     part_desc = GetString(row, "part_desc"),
                     lower = GetString(row, "lower_limit_value"),
@@ -84,6 +115,8 @@ ORDER BY part;
                 new SqlParameter("@TaskNo", taskNo)
             );
         }
+
+
 
         public List<PART_TEST_LIMITS> GetPartTestLimitsByPartTestAndTestResultLIS(string partTest)
         {
@@ -305,15 +338,15 @@ WHERE tr.date_tested >= @StartDate
             string Market,
             string TaskNo,
             string ModelName,
-            string StrSpare3)
+            string DataSource)
         {
             DataTable tmpTable = new DataTable();
             List<XY_LABEL_CHARTS_CLEAN_STR> result = new List<XY_LABEL_CHARTS_CLEAN_STR>();
-
+            string query = "";
             if (string.IsNullOrEmpty(PartNo))
                 PartNo = "";
-
-            string query = @"
+            if (DataSource == "BASE" || DataSource == "LISBOM") {
+                query = @"
 SELECT 
     ROW_NUMBER() OVER (ORDER BY tr.date_tested ASC) AS RUNNO,
     DATEDIFF(SECOND, CONVERT(date, tr.date_tested), GETDATE()) AS sec,
@@ -329,18 +362,39 @@ WHERE tr.test_part = @PartNo
   AND tr.date_tested < DATEADD(day, 1, @EndDate)
 ORDER BY tr.date_tested ASC;
 ";
-
-            using (SqlCommand cmd = new SqlCommand(query, database.Connection))
+            }else if (DataSource == "LISMAP")
             {
-                cmd.Parameters.AddWithValue("@PartNo", PartNo);
-                cmd.Parameters.AddWithValue("@StartDate", startDate);
-                cmd.Parameters.AddWithValue("@EndDate", endDate);
-
-                using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                {
-                    adapter.Fill(tmpTable);
-                }
+                 query = @"
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY tr.date_tested ASC) AS RUNNO,
+    DATEDIFF(SECOND, CONVERT(date, tr.date_tested), GETDATE()) AS sec,
+    tr.test_value, 
+    tr.date_tested,
+    SUBSTRING(REPLACE(CONVERT(CHAR(10), tr.date_tested, 101), '/', ''), 0, 5) AS condate,
+    tr.test_unit,
+    tr.test_info1,
+    tr.test_info2
+FROM test_result_clean tr
+INNER JOIN LISBOM_Part_Map pm on pm.part = tr.test_part
+WHERE tr.test_part = pm.part
+  AND pm.lisbom_part = @PartNo
+  AND tr.date_tested >= @StartDate
+  AND tr.date_tested < DATEADD(day, 1, @EndDate)
+  AND pm.store_location = tr.store_location
+ORDER BY tr.date_tested ASC;;
+";
             }
+                using (SqlCommand cmd = new SqlCommand(query, database.Connection))
+                {
+                    cmd.Parameters.AddWithValue("@PartNo", PartNo);
+                    cmd.Parameters.AddWithValue("@StartDate", startDate);
+                    cmd.Parameters.AddWithValue("@EndDate", endDate);
+
+                    using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+                    {
+                        adapter.Fill(tmpTable);
+                    }
+                }
 
             foreach (DataRow row in tmpTable.Rows)
             {
@@ -364,7 +418,7 @@ ORDER BY tr.date_tested ASC;
     string Market,
     string TaskNo,
     string ModelName,
-    string StrSpare3)
+    string DataSource)
 {
     DataTable tmpTable = new DataTable();
     List<XY_LABEL_CHARTS_CLEAN_STR> result = new List<XY_LABEL_CHARTS_CLEAN_STR>();
@@ -501,7 +555,7 @@ WHERE test_part = @PartTest
         {
             string query = $@"
         select task, description From task where task in(
-select task From test_result_lis group by task) order by description";
+select task From test_result_clean group by task) order by description";
 
             return ExecuteQuery<TaskList>(query, row => new TaskList
             {

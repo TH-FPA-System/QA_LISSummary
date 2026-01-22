@@ -94,161 +94,177 @@ namespace QA_LISSummary.Controllers
             List<List<XY_LABEL_CHARTS_CLEAN_STR>> listModels = new List<List<XY_LABEL_CHARTS_CLEAN_STR>>();
             List<PART_PROPERTY_DATA> Part_Models = new List<PART_PROPERTY_DATA>();
 
-            Part_Test_Limits = LISSPC_BS.GetPartTestLimitsByTaskAndTestResultLIS(TaskNo);
+            string DataSorceQry = "BASE"; 
 
+            Part_Test_Limits = LISSPC_BS.GetPartTestLimitsByTaskAndTestResultLIS(TaskNo);
+            
             if (TaskNo == "1205")
             {
                 Part_Models = LISSPC_BS.GetCommonPartPropertyDataByTask("MODEL", TaskNo);
             }
             Part_Markets = LISSPC_BS.GetDDGroupPartPropertyData("MARKET");
-            if (DropDownS == "ALL")
+            if (DropDownS == "ALL") {
                 DropDownS = Part_Test_Limits[0].part;
-            DataQuery = LISSPC_BS.GetDataXY(startDate, endDate, DropDownS, DPNMarket, TaskNo, ModelName, "");
-            List<XY_LABEL_CHARTS_CLEAN_STR> DataQuerySub1 = new List<XY_LABEL_CHARTS_CLEAN_STR>();
-
-
-            // New average data series xx
-            List<XY_LABEL_CHARTS_CLEAN_STR> DataQueryAvg = LISSPC_BS.GetDataXY_Avg(startDate, endDate, DropDownS, DPNMarket, TaskNo, ModelName, "");
-
-
-            // Get Limit Adjust by table "test_result_lis_limit_adjust"
-            LIMIT_ADJUST lIMIT_ADJUST = new LIMIT_ADJUST();
-            lIMIT_ADJUST = LISSPC_BS.GetLimit_Adjust(DropDownS, TaskNo);
-
-            // Original DataQuery
-            ApplyLimitAdjust(DataQuery, DropDownS, TaskNo);
-
-            // New DataQueryAvg
-            ApplyLimitAdjust(DataQueryAvg, DropDownS, TaskNo);
-
-            if (DataQuery.Count != 0)
-            {
-                for (int i = 0; i < DataQuery.Count; i++)
+           }
+            else {
+               for (int i = 0; i < Part_Test_Limits.Count; i++)
                 {
+                    if (Part_Test_Limits[i].part == DropDownS)
+                    {
+                        DataSorceQry = Part_Test_Limits[i].data_source;
+                        break;
+                    }
+                        
+                }
+
+            }
+           
+                DataQuery = LISSPC_BS.GetDataXY(startDate, endDate, DropDownS, DPNMarket, TaskNo, ModelName, DataSorceQry);
+                List<XY_LABEL_CHARTS_CLEAN_STR> DataQuerySub1 = new List<XY_LABEL_CHARTS_CLEAN_STR>();
+
+
+                // New average data series xx
+                List<XY_LABEL_CHARTS_CLEAN_STR> DataQueryAvg = LISSPC_BS.GetDataXY_Avg(startDate, endDate, DropDownS, DPNMarket, TaskNo, ModelName, DataSorceQry);
+
+
+                // Get Limit Adjust by table "test_result_lis_limit_adjust"
+                LIMIT_ADJUST lIMIT_ADJUST = new LIMIT_ADJUST();
+                lIMIT_ADJUST = LISSPC_BS.GetLimit_Adjust(DropDownS, TaskNo);
+
+                // Original DataQuery
+                ApplyLimitAdjust(DataQuery, DropDownS, TaskNo);
+
+                // New DataQueryAvg
+                ApplyLimitAdjust(DataQueryAvg, DropDownS, TaskNo);
+
+                if (DataQuery.Count != 0)
+                {
+                    for (int i = 0; i < DataQuery.Count; i++)
+                    {
                         DataQuerySub1.Add(DataQuery[i]);
 
+                    }
                 }
-            }
 
-            for (int i = 0; i < Part_Test_Limits.Count; i++)
-            {
-                if (Part_Test_Limits[i].part == DropDownS)
+                for (int i = 0; i < Part_Test_Limits.Count; i++)
                 {
-                    ViewBag.BOMSource = Part_Test_Limits[i].data_source;
-                    ViewBag.DropdownS = Part_Test_Limits[i].part;
-                    ViewBag.PartDesc = Part_Test_Limits[i].part_desc;
-                    ViewBag.LowerLim = Part_Test_Limits[i].lower;
-                    ViewBag.UpperLim = Part_Test_Limits[i].upper;
-                    USL = Convert.ToDouble(Part_Test_Limits[i].upper);
-                    LSL = Convert.ToDouble(Part_Test_Limits[i].lower);
+                    if (Part_Test_Limits[i].part == DropDownS)
+                    {
+                        ViewBag.BOMSource = Part_Test_Limits[i].data_source;
+                        ViewBag.DropdownS = Part_Test_Limits[i].part;
+                        ViewBag.PartDesc = Part_Test_Limits[i].part_desc;
+                        ViewBag.LowerLim = Part_Test_Limits[i].lower;
+                        ViewBag.UpperLim = Part_Test_Limits[i].upper;
+                        USL = Convert.ToDouble(Part_Test_Limits[i].upper);
+                        LSL = Convert.ToDouble(Part_Test_Limits[i].lower);
+                    }
+
                 }
 
-            }
-
-            if (DropDownS == "ALL")
-            {
-                ViewBag.DropdownS = "ALL";
-                ViewBag.TypeFAN = "ALL";
-                ViewBag.LowerLim = "0";
-                ViewBag.UpperLim = "1500";
-                USL = 1500;
-                LSL = 0;
-            }
-            ViewBag.TaskNo = TaskNo;
-            ViewBag.Part_Array = Part_Test_Limits;
-            ViewBag.Selected = PageSelected;
-            ViewBag.Part_Markets = Part_Markets;
-            for (int i = 0; i < Part_Markets.Count; i++)
-                if (Part_Markets[i].PropertyValue == DPNMarket)
-                    ViewBag.DPNMarket = Part_Markets[i].PropertyValue;
-            if (DPNMarket == "ALL")
-                ViewBag.DPNMarket = "ALL";
-
-            ViewBag.Part_Models = Part_Models;
-            for (int i = 0; i < Part_Models.Count; i++)
-                if (Part_Models[i].PropertyValue == ModelName)
-                    ViewBag.DPModelName = Part_Models[i].PropertyValue;
-            if (ModelName == "ALL")
-                ViewBag.DPModelName = "ALL";
-
-            if (DataQuerySub1.Count != 0)
-            {
-                var resultData = DataQuerySub1.Select(v => (double)Convert.ToDouble(v.y));
-                STDV = LISSPC_BS.CalculateStandardDeviation(resultData);
-                AVGX = resultData.Average();
-                SAMPLES = resultData.Count();
-
-                CP = (USL - LSL) / (6 * STDV);
-                CPU = (USL - AVGX) / (3 * STDV);
-                CPL = (AVGX - LSL) / (3 * STDV);
-                CPK = Math.Min(CPU, CPL);
-
-                ViewBag.STDV = STDV;
-                ViewBag.AVGX = AVGX;
-                ViewBag.SAMPLES = SAMPLES;
-                ViewBag.CP = CP;
-                ViewBag.CPU = CPU;
-                ViewBag.CPL = CPL;
-                ViewBag.CPK = CPK;
-
-            }
-
-
-            ViewBag.StartDate = startDate.ToString("yyyy-MM-dd");
-            ViewBag.EndDate = endDate.ToString("yyyy-MM-dd");
-            totalDays = (endDate - startDate).TotalDays;
-            ViewBag.TotalDays = totalDays;
-            int DaysRunS = 0, DaysRunE = 0, MonthsRunS = 0, MonthsRunE = 0;
-
-            MonthsRunS = Convert.ToInt16(startDate.ToString("MM"));
-            MonthsRunE = Convert.ToInt16(endDate.ToString("MM"));
-            DaysRunS = Convert.ToInt16(startDate.ToString("dd"));
-            DaysRunE = Convert.ToInt16(endDate.ToString("dd"));
-            LabelScale = LISSPC_BS.GenerateDateLabel(DaysRunS, DaysRunE, MonthsRunS, MonthsRunE);
-            // Save skip toggle in ViewBag for Razor
-            ViewBag.SkipEmptyData = SkipEmptyData;
-
-            if (DataQuerySub1.Count > 0)
-            {
-                ViewBag.UNIT1 = DataQuerySub1[0].test_unit;
-                listModels.Add(DataQuerySub1);
-
-                if (SkipEmptyData)
+                if (DropDownS == "ALL")
                 {
-                    // Collect all dates in DataQuerySub1
-                    var datesWithData = DataQuerySub1
-                        .Select(d => d.x.Substring(0, 4)) // assuming x = "ddMM,Value" format; take "0106"
-                        .Distinct()
-                        .ToList();
-
-                    // Filter LabelScale to keep only dates that exist in data
-                    LabelScale = LabelScale
-                        .Where(l => datesWithData.Contains(l.x.Substring(0, 4))) // match "0106" etc
-                        .ToList();
+                    ViewBag.DropdownS = "ALL";
+                    ViewBag.TypeFAN = "ALL";
+                    ViewBag.LowerLim = "0";
+                    ViewBag.UpperLim = "1500";
+                    USL = 1500;
+                    LSL = 0;
                 }
+                ViewBag.TaskNo = TaskNo;
+                ViewBag.Part_Array = Part_Test_Limits;
+                ViewBag.Selected = PageSelected;
+                ViewBag.Part_Markets = Part_Markets;
+                for (int i = 0; i < Part_Markets.Count; i++)
+                    if (Part_Markets[i].PropertyValue == DPNMarket)
+                        ViewBag.DPNMarket = Part_Markets[i].PropertyValue;
+                if (DPNMarket == "ALL")
+                    ViewBag.DPNMarket = "ALL";
+
+                ViewBag.Part_Models = Part_Models;
+                for (int i = 0; i < Part_Models.Count; i++)
+                    if (Part_Models[i].PropertyValue == ModelName)
+                        ViewBag.DPModelName = Part_Models[i].PropertyValue;
+                if (ModelName == "ALL")
+                    ViewBag.DPModelName = "ALL";
+
+                if (DataQuerySub1.Count != 0)
+                {
+                    var resultData = DataQuerySub1.Select(v => (double)Convert.ToDouble(v.y));
+                    STDV = LISSPC_BS.CalculateStandardDeviation(resultData);
+                    AVGX = resultData.Average();
+                    SAMPLES = resultData.Count();
+
+                    CP = (USL - LSL) / (6 * STDV);
+                    CPU = (USL - AVGX) / (3 * STDV);
+                    CPL = (AVGX - LSL) / (3 * STDV);
+                    CPK = Math.Min(CPU, CPL);
+
+                    ViewBag.STDV = STDV;
+                    ViewBag.AVGX = AVGX;
+                    ViewBag.SAMPLES = SAMPLES;
+                    ViewBag.CP = CP;
+                    ViewBag.CPU = CPU;
+                    ViewBag.CPL = CPL;
+                    ViewBag.CPK = CPK;
+
+                }
+
+
+                ViewBag.StartDate = startDate.ToString("yyyy-MM-dd");
+                ViewBag.EndDate = endDate.ToString("yyyy-MM-dd");
+                totalDays = (endDate - startDate).TotalDays;
+                ViewBag.TotalDays = totalDays;
+                int DaysRunS = 0, DaysRunE = 0, MonthsRunS = 0, MonthsRunE = 0;
+
+                MonthsRunS = Convert.ToInt16(startDate.ToString("MM"));
+                MonthsRunE = Convert.ToInt16(endDate.ToString("MM"));
+                DaysRunS = Convert.ToInt16(startDate.ToString("dd"));
+                DaysRunE = Convert.ToInt16(endDate.ToString("dd"));
+                LabelScale = LISSPC_BS.GenerateDateLabel(DaysRunS, DaysRunE, MonthsRunS, MonthsRunE);
+                // Save skip toggle in ViewBag for Razor
+                ViewBag.SkipEmptyData = SkipEmptyData;
+
+                if (DataQuerySub1.Count > 0)
+                {
+                    ViewBag.UNIT1 = DataQuerySub1[0].test_unit;
+                    listModels.Add(DataQuerySub1);
+
+                    if (SkipEmptyData)
+                    {
+                        // Collect all dates in DataQuerySub1
+                        var datesWithData = DataQuerySub1
+                            .Select(d => d.x.Substring(0, 4)) // assuming x = "ddMM,Value" format; take "0106"
+                            .Distinct()
+                            .ToList();
+
+                        // Filter LabelScale to keep only dates that exist in data
+                        LabelScale = LabelScale
+                            .Where(l => datesWithData.Contains(l.x.Substring(0, 4))) // match "0106" etc
+                            .ToList();
+                    }
+                }
+
+
+                if (listModels.Count > 0)
+                {
+                    listModels.Add(LabelScale);
+                }
+
+                if (DataQueryAvg.Count > 0)
+                {
+                    listModels.Add(DataQueryAvg);
+                }
+
+
+
+
+
+                if (totalDays > 365)
+                    return Content("<script language='javascript' type='text/javascript'>alert('Data more than 365 Days!!'); history.back() </script>");
+                else
+                    return View("GetDataAllTest", listModels);
+
             }
-
-
-            if (listModels.Count > 0)
-            {
-                listModels.Add(LabelScale);
-            }
-
-            if (DataQueryAvg.Count > 0)
-            {
-                listModels.Add(DataQueryAvg);
-            }
-
-
-
-
-
-            if (totalDays > 365)
-                return Content("<script language='javascript' type='text/javascript'>alert('Data more than 365 Days!!'); history.back() </script>");
-            else
-                return View("GetDataAllTest", listModels);
-
-        }
 
         // ========================
         // LIMIT ADJUST CRUD

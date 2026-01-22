@@ -163,13 +163,20 @@
                     </option>
                     @foreach (var str in ViewBag.Part_Array)
                     {
-                        var highlightStyle = str.data_source != "BASE" ? "background-color: #ffebcc; color: #b33;" : "";
+                        string highlightStyle = str.data_source switch
+                        {
+                            "BASE" => "",
+                            "LISBOM" => "background-color: #fff3cd; color: #856404;", // yellow
+                            "LISMAP" => "background-color: #d4edda; color: #155724;", // green
+                            _ => "" // no highlight for anything else
+                        };
                         <option value="@str.part" style="@highlightStyle">
                             @str.part_desc (@str.part)
                         </option>
                     }
                 </select>
             </div>
+
 
             @if (ViewBag.TaskNo == "1205")
             {
