@@ -345,7 +345,33 @@ WHERE tr.date_tested >= @StartDate
             string query = "";
             if (string.IsNullOrEmpty(PartNo))
                 PartNo = "";
-            if (DataSource == "BASE" || DataSource == "LISBOM") {
+            bool filterMarket = !string.IsNullOrEmpty(Market) && Market != "ALL";
+
+            if (DataSource == "BASE" || DataSource == "LISBOM")
+            {
+                query = @"
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY tr.date_tested ASC) AS RUNNO,
+    DATEDIFF(SECOND, CONVERT(date, tr.date_tested), GETDATE()) AS sec,
+    tr.test_value, 
+    tr.date_tested,
+    SUBSTRING(REPLACE(CONVERT(CHAR(10), tr.date_tested, 101), '/', ''), 0, 5) AS condate,
+    tr.test_unit,
+    tr.test_info1,
+    tr.test_info2
+FROM test_result_clean tr" +
+                (filterMarket ? @"
+INNER JOIN part_property_data ppd 
+    ON ppd.part = tr.part
+   AND ppd.property = 'MARKET'
+   AND ppd.property_value = @Market" : "") + @"
+WHERE tr.test_part = @PartNo
+  AND tr.date_tested >= @StartDate
+  AND tr.date_tested < DATEADD(day, 1, @EndDate)
+ORDER BY tr.date_tested ASC;";
+            }
+            else if (DataSource == "LISMAP")
+            {
                 query = @"
 SELECT 
     ROW_NUMBER() OVER (ORDER BY tr.date_tested ASC) AS RUNNO,
@@ -357,40 +383,29 @@ SELECT
     tr.test_info1,
     tr.test_info2
 FROM test_result_clean tr
-WHERE tr.test_part = @PartNo
+INNER JOIN LISBOM_Part_Map pm 
+    ON pm.part = tr.test_part
+   AND pm.store_location = tr.store_location" +
+                (filterMarket ? @"
+INNER JOIN part_property_data ppd 
+    ON ppd.part = tr.part
+   AND ppd.property = 'MARKET'
+   AND ppd.property_value = @Market" : "") + @"
+WHERE pm.lisbom_part = @PartNo
   AND tr.date_tested >= @StartDate
   AND tr.date_tested < DATEADD(day, 1, @EndDate)
-ORDER BY tr.date_tested ASC;
-";
-            }else if (DataSource == "LISMAP")
-            {
-                 query = @"
-SELECT 
-    ROW_NUMBER() OVER (ORDER BY tr.date_tested ASC) AS RUNNO,
-    DATEDIFF(SECOND, CONVERT(date, tr.date_tested), GETDATE()) AS sec,
-    tr.test_value, 
-    tr.date_tested,
-    SUBSTRING(REPLACE(CONVERT(CHAR(10), tr.date_tested, 101), '/', ''), 0, 5) AS condate,
-    tr.test_unit,
-    tr.test_info1,
-    tr.test_info2
-FROM test_result_clean tr
-INNER JOIN LISBOM_Part_Map pm on pm.part = tr.test_part
-WHERE tr.test_part = pm.part
-  AND pm.lisbom_part = @PartNo
-  AND tr.date_tested >= @StartDate
-  AND tr.date_tested < DATEADD(day, 1, @EndDate)
-  AND pm.store_location = tr.store_location
-ORDER BY tr.date_tested ASC;;
-";
+ORDER BY tr.date_tested ASC;";
             }
-                using (SqlCommand cmd = new SqlCommand(query, database.Connection))
-                {
-                    cmd.Parameters.AddWithValue("@PartNo", PartNo);
-                    cmd.Parameters.AddWithValue("@StartDate", startDate);
-                    cmd.Parameters.AddWithValue("@EndDate", endDate);
 
-                    using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+            using (SqlCommand cmd = new SqlCommand(query, database.Connection))
+            {
+                cmd.Parameters.AddWithValue("@PartNo", PartNo);
+                cmd.Parameters.AddWithValue("@StartDate", startDate);
+                cmd.Parameters.AddWithValue("@EndDate", endDate);
+                if (filterMarket)
+                    cmd.Parameters.AddWithValue("@Market", Market);
+
+                using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
                     {
                         adapter.Fill(tmpTable);
                     }
@@ -427,6 +442,7 @@ ORDER BY tr.date_tested ASC;;
                 PartNo = "";
 
             string query = "";
+            bool filterMarket = !string.IsNullOrEmpty(Market) && Market != "ALL";
 
             if (DataSource == "BASE" || DataSource == "LISBOM")
             {
@@ -438,7 +454,12 @@ WITH AvgData AS
         AVG(CAST(tr.test_value AS float)) AS avg_test_value,
         MIN(tr.date_tested) AS date_tested,
         MAX(tr.test_unit) AS test_unit
-    FROM test_result_clean tr
+    FROM test_result_clean tr" +
+                (filterMarket ? @"
+    INNER JOIN part_property_data ppd 
+        ON ppd.part = tr.part
+       AND ppd.property = 'MARKET'
+       AND ppd.property_value = @Market" : "") + @"
     WHERE tr.test_part = @PartNo
       AND tr.date_tested >= @StartDate
       AND tr.date_tested < DATEADD(day, 1, @EndDate)
@@ -454,8 +475,7 @@ SELECT
     NULL AS test_info1,
     NULL AS test_info2
 FROM AvgData
-ORDER BY condate;
-";
+ORDER BY condate;";
             }
             else if (DataSource == "LISMAP")
             {
@@ -470,7 +490,12 @@ WITH AvgData AS
     FROM test_result_clean tr
     INNER JOIN LISBOM_Part_Map pm 
         ON pm.part = tr.test_part
-       AND pm.store_location = tr.store_location
+       AND pm.store_location = tr.store_location" +
+                (filterMarket ? @"
+    INNER JOIN part_property_data ppd 
+        ON ppd.part = tr.part
+       AND ppd.property = 'MARKET'
+       AND ppd.property_value = @Market" : "") + @"
     WHERE pm.lisbom_part = @PartNo
       AND tr.date_tested >= @StartDate
       AND tr.date_tested < DATEADD(day, 1, @EndDate)
@@ -486,8 +511,7 @@ SELECT
     NULL AS test_info1,
     NULL AS test_info2
 FROM AvgData
-ORDER BY condate;
-";
+ORDER BY condate;";
             }
 
             using (SqlCommand cmd = new SqlCommand(query, database.Connection))
@@ -495,6 +519,8 @@ ORDER BY condate;
                 cmd.Parameters.AddWithValue("@PartNo", PartNo);
                 cmd.Parameters.AddWithValue("@StartDate", startDate);
                 cmd.Parameters.AddWithValue("@EndDate", endDate);
+                if (filterMarket)
+                    cmd.Parameters.AddWithValue("@Market", Market);
 
                 using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
                 {

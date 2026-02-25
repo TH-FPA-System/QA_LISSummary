@@ -379,7 +379,20 @@
 
             <!-- Hidden fields -->
             <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
-            <input type="hidden" name="DPNMarket" value="ALL" />
+            <!-- Market -->
+            <div class="fc-group">
+                <span class="fc-label">Market</span>
+                <select class="fc-select" name="DPNMarket" style="min-width:130px;">
+                    <option value="ALL" @(ViewBag.DPNMarket == "ALL" ? "selected" : "")>ALL</option>
+                    @foreach (var m in ViewBag.Part_Markets)
+                    {
+                        <option value="@m.PropertyValue"
+                                @(m.PropertyValue == ViewBag.DPNMarket ? "selected" : "")>
+                            @m.PropertyValue
+                        </option>
+                    }
+                </select>
+            </div>
 
             <!-- Date From -->
             <div class="fc-group">
