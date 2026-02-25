@@ -18,183 +18,406 @@
     <link rel="stylesheet" href="~/Content/buttons.dataTables.min.css" />
     <link rel="stylesheet" href="~/Content/uikit.min.css" />
     <link rel="stylesheet" href="~/Scripts/FusionGrid/fusiongrid.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
     <style>
+        /* ===== ROOT VARIABLES ===== */
+        :root {
+            --blue: #0075c2;
+            --blue-dark: #005a99;
+            --blue-light: #e8f3ff;
+            --blue-glow: rgba(0, 117, 194, 0.14);
+            --border: #e2e8f0;
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --label: #94a3b8;
+            --radius: 10px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 24px rgba(0,0,0,0.09);
+        }
+
+        /* ===== BASE ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f6fa;
+            font-family: 'DM Sans', 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
         }
 
-        .filter-form {
-            background-color: #ffffff;
-            padding: 20px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            margin-bottom: 25px;
+        /* ===== FILTER CARD ===== */
+        .filter-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 20px 20px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 10px;
         }
 
-            .filter-form .form-control,
-            .filter-form .form-select {
-                border-radius: 8px;
-                transition: all 0.2s;
+        /* Field group: label on top */
+        .fc-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .fc-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--label);
+            user-select: none;
+        }
+
+        /* Shared input style */
+        .fc-input,
+        .fc-select,
+        #partSearch {
+            height: 38px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0 12px;
+            font-size: 0.875rem;
+            font-family: inherit;
+            color: var(--text);
+            background-color: #f8fafc;
+            transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+            outline: none;
+        }
+
+            .fc-input:hover,
+            .fc-select:hover,
+            #partSearch:hover {
+                border-color: #94a3b8;
+                background-color: #fff;
             }
 
-                .filter-form .form-control:focus,
-                .filter-form .form-select:focus {
-                    box-shadow: 0 0 5px #0075c2;
-                    border-color: #0075c2;
-                }
-
-            .filter-form button {
-                border-radius: 8px;
-                transition: all 0.2s;
+            .fc-input:focus,
+            .fc-select:focus,
+            #partSearch:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px var(--blue-glow);
+                background-color: #fff;
             }
 
-                .filter-form button:hover {
-                    background-color: #0056a3;
-                    border-color: #0056a3;
+        /* Custom select arrow */
+        .fc-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%230075c2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+            cursor: pointer;
+        }
+
+        /* Date separator */
+        .date-sep {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--label);
+            padding-bottom: 8px;
+            user-select: none;
+        }
+
+        /* Part search with icon */
+        .part-search-wrap {
+            position: relative;
+        }
+
+            .part-search-wrap .search-icon {
+                position: absolute;
+                left: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 13px;
+                color: var(--label);
+                pointer-events: none;
+                line-height: 1;
+            }
+
+        #partSearch {
+            padding-left: 32px;
+            width: 100%;
+        }
+
+        /* Dropdown list */
+        #dropdownList {
+            font-family: 'DM Sans', sans-serif;
+            border-radius: var(--radius);
+        }
+
+            #dropdownList .dropdown-item-custom {
+                padding: 8px 14px;
+                cursor: pointer;
+                font-size: 0.845rem;
+                border-bottom: 1px solid #f1f5f9;
+                transition: background 0.1s;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                color: var(--text);
+            }
+
+                #dropdownList .dropdown-item-custom:last-child {
+                    border-bottom: none;
                 }
 
+                #dropdownList .dropdown-item-custom:hover,
+                #dropdownList .dropdown-item-custom.kbd-active {
+                    background-color: var(--blue-light);
+                    color: var(--blue);
+                    font-weight: 500;
+                }
+
+                #dropdownList .dropdown-item-custom.highlight-bom {
+                    background-color: #fffbeb;
+                    color: #92400e;
+                }
+
+                    #dropdownList .dropdown-item-custom.highlight-bom:hover {
+                        background-color: #fef3c7;
+                    }
+
+                #dropdownList .dropdown-item-custom.highlight-map {
+                    background-color: #f0fdf4;
+                    color: #166534;
+                }
+
+                    #dropdownList .dropdown-item-custom.highlight-map:hover {
+                        background-color: #dcfce7;
+                    }
+
+            #dropdownList .no-results {
+                padding: 12px;
+                color: var(--label);
+                font-size: 0.84rem;
+                text-align: center;
+            }
+
+        /* Skip empty checkbox row */
+        .fc-check-wrap {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding-bottom: 8px;
+        }
+
+            .fc-check-wrap input[type="checkbox"] {
+                width: 16px;
+                height: 16px;
+                accent-color: var(--blue);
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+
+            .fc-check-wrap label {
+                font-size: 0.83rem;
+                color: var(--muted);
+                font-weight: 500;
+                cursor: pointer;
+                white-space: nowrap;
+                margin: 0;
+            }
+
+        /* Apply button */
+        .btn-apply {
+            height: 38px;
+            padding: 0 18px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.18s, box-shadow 0.18s, transform 0.1s;
+            box-shadow: 0 2px 10px rgba(0, 117, 194, 0.28);
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+
+            .btn-apply:hover {
+                background: var(--blue-dark);
+                box-shadow: 0 4px 16px rgba(0, 117, 194, 0.38);
+            }
+
+            .btn-apply:active {
+                transform: scale(0.97);
+            }
+        /* ===== MANUAL TRENDLINE BOX ===== */
+        #manualTrendBox {
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            #manualTrendBox .trend-title {
+                font-size: 0.78rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.07em;
+                color: var(--label);
+                margin-bottom: 10px;
+            }
+
+            #manualTrendBox .form-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: var(--muted);
+            }
+
+        /* ===== STAT TABLE ===== */
+        .stat-table {
+            width: 280px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            font-size: 0.875rem;
+        }
+
+            .stat-table th {
+                background-color: #f8fafc;
+                color: var(--muted);
+                font-weight: 600;
+                font-size: 0.78rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                padding: 8px 14px;
+                border-bottom: 1px solid var(--border);
+                width: 90px;
+            }
+
+            .stat-table td {
+                font-weight: 600;
+                color: var(--text);
+                padding: 8px 14px;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .stat-table tr:last-child th,
+            .stat-table tr:last-child td {
+                border-bottom: none;
+            }
+
+        .stat-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        /* ===== CHART CARDS ===== */
         .chart-card {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            min-height: 650px;
-        }
-
-        .sub-chart-card {
-            min-height: 480px;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            padding: 12px;
         }
 
         table.custom-table th, table.custom-table td {
             vertical-align: middle !important;
         }
-
-        table.custom-table th {
-            color: #555555;
-            background-color: #f1f3f6;
-        }
-
-        table.custom-table td {
-            font-weight: 500;
-        }
-
-        input[type="date"] {
-            font-size: 1rem;
-        }
-
-        select.form-select {
-            font-size: 0.9rem;
-        }
-
-        #dropdownList .dropdown-item-custom {
-            padding: 7px 12px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background 0.15s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-            #dropdownList .dropdown-item-custom:hover,
-            #dropdownList .dropdown-item-custom.selected {
-                background-color: #e8f3ff;
-                color: #0075c2;
-            }
-
-            #dropdownList .dropdown-item-custom:last-child {
-                border-bottom: none;
-            }
-
-            #dropdownList .dropdown-item-custom.highlight-bom {
-                background-color: #fff3cd;
-                color: #856404;
-            }
-
-            #dropdownList .dropdown-item-custom.highlight-map {
-                background-color: #d4edda;
-                color: #155724;
-            }
-
-        #dropdownList .no-results {
-            padding: 10px 12px;
-            color: #999;
-            font-size: 0.85rem;
-            text-align: center;
-        }
     </style>
 </head>
-<body class="bg-light-purple">
+<body>
 
     <br />
-    <!-- Manual Trendline Control -->
+
+    <!-- ===== MANUAL TRENDLINE PANEL ===== -->
     <div id="manualTrendBox"
          style="position:fixed; bottom:20px; right:20px; background:#fff;
-            border-radius:10px; padding:12px 14px; box-shadow:0 4px 12px rgba(0,0,0,.15);
-            z-index:9999; font-size:13px; width:220px;">
-        <div style="font-weight:600; margin-bottom:6px;">Manual Limits</div>
+                border-radius:14px; padding:14px 16px;
+                box-shadow:0 6px 24px rgba(0,0,0,0.13);
+                z-index:9999; width:210px; border:1px solid var(--border);">
 
-        <div class="mb-1">
-            <label class="form-label mb-0">Lower</label>
+        <div class="trend-title">⚙ Manual Limits</div>
+
+        <div class="mb-2">
+            <label class="form-label mb-1">Lower</label>
             <input type="number" id="manualLower" class="form-control form-control-sm"
                    placeholder="@ViewBag.LowerLim" />
         </div>
 
-        <div class="mb-1">
-            <label class="form-label mb-0">Upper</label>
+        <div class="mb-2">
+            <label class="form-label mb-1">Upper</label>
             <input type="number" id="manualUpper" class="form-control form-control-sm"
                    placeholder="@ViewBag.UpperLim" />
         </div>
 
         <div class="d-flex gap-1 mt-2">
-            <button class="btn btn-sm btn-primary w-100" onclick="applyManualTrend()">
-                Apply
-            </button>
-            <button class="btn btn-sm btn-secondary w-100" onclick="resetTrend()">
-                Reset
-            </button>
-            <button class="btn btn-sm btn-danger w-100" onclick="removeAllTrendlines()">
-                Clear
-            </button>
+            <button class="btn btn-sm btn-primary w-100" onclick="applyManualTrend()">Apply</button>
+            <button class="btn btn-sm btn-secondary w-100" onclick="resetTrend()">Reset</button>
+            <button class="btn btn-sm btn-danger w-100" onclick="removeAllTrendlines()">Clear</button>
         </div>
-
     </div>
 
+    <!-- ===== FILTER CARD ===== -->
     <div class="container mt-4">
-        <!-- Filter Form -->
-        <form class="row gx-2 gy-2 align-items-center filter-form px-3 py-3"
+        <form class="filter-card"
               action="@Url.Action("", "LISSPCDateSelect")"
               style="width:100%; max-width:100vw;">
 
-            <div class="col-auto">
-                <input type="date" class="form-control form-control-sm" name="startDate" value="@ViewBag.StartDate" />
+            <!-- Hidden fields -->
+            <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
+            <input type="hidden" name="DPNMarket" value="ALL" />
+
+            <!-- Date From -->
+            <div class="fc-group">
+                <span class="fc-label">From</span>
+                <input type="date" class="fc-input" name="startDate" value="@ViewBag.StartDate" />
             </div>
 
-            <div class="col-auto fw-bold">to</div>
+            <div class="date-sep">→</div>
 
-            <div class="col-auto">
-                <input type="date" class="form-control form-control-sm" name="endDate" value="@ViewBag.EndDate" />
+            <!-- Date To -->
+            <div class="fc-group">
+                <span class="fc-label">To</span>
+                <input type="date" class="fc-input" name="endDate" value="@ViewBag.EndDate" />
             </div>
-            <div class="col-auto">
-                <select class="form-select form-select-sm" name="TaskNo" onchange="this.form.submit()">
+
+            <!-- Task -->
+            <div class="fc-group">
+                <span class="fc-label">Task</span>
+                <select class="fc-select" name="TaskNo" onchange="this.form.submit()" style="min-width:170px;">
                     @foreach (var t in ViewBag.TaskList)
                     {
                         <option value="@t.Task" @(t.Task.ToString() == ViewBag.TaskNo ? "selected" : "")>
-                            @t.Task (@t.TaskName)
+                            @t.Task — @t.TaskName
                         </option>
                     }
                 </select>
             </div>
-            <div class="col-auto" style="position:relative;">
-                <!-- Hidden real select that submits with the form -->
+
+            <!-- Part / Test (Searchable) -->
+            <div class="fc-group" style="min-width:320px; position:relative;">
+                <span class="fc-label">Part / Test</span>
+
+                <!-- Hidden real select for form submission -->
                 <select id="dropDownSHidden" name="DropDownS" style="display:none;">
                     <option value="@ViewBag.DropdownS" selected>
                         @(ViewBag.DropdownS == null ? "Please select part-test.." :
-              ViewBag.DropdownS == "ALL" ? "Part-Test" :
-              ViewBag.PartDesc)
+                          ViewBag.DropdownS == "ALL" ? "Part-Test" :
+                          ViewBag.PartDesc)
                     </option>
                     @foreach (var str in ViewBag.Part_Array)
                     {
@@ -211,36 +434,38 @@
                     }
                 </select>
 
-                <!-- Searchable dropdown UI -->
-                <div id="searchableDropdown" style="position:relative; width:260px;">
-                    <input type="text"
-                           id="partSearch"
-                           class="form-control form-control-sm"
-                           placeholder="🔍 Search part..."
-                           autocomplete="off"
-                           style="border-radius:8px;"
-                           onfocus="showDropdownList()"
-                           oninput="filterDropdown(this.value)" />
+                <!-- Visible searchable UI -->
+                <div id="searchableDropdown" style="position:relative;">
+                    <div class="part-search-wrap">
+                        <span class="search-icon">🔍</span>
+                        <input type="text"
+                               id="partSearch"
+                               autocomplete="off"
+                               placeholder="Search part or description..."
+                               onfocus="showDropdownList()"
+                               oninput="filterDropdown(this.value)" />
+                    </div>
 
                     <div id="dropdownList"
-                         style="display:none; position:absolute; top:100%; left:0;
-            width:360px;
-                    background:#fff; border:1px solid #ced4da; border-radius:8px;
-                    max-height:260px; overflow-y:auto; z-index:9998;
-                    box-shadow:0 6px 20px rgba(0,0,0,0.12); margin-top:2px;">
+                         style="display:none; position:absolute; top:calc(100% + 4px); left:0;
+                                width:440px; background:#fff;
+                                border:1.5px solid var(--border); border-radius:var(--radius);
+                                max-height:260px; overflow-y:auto; z-index:9998;
+                                box-shadow:0 8px 28px rgba(0,0,0,0.13);">
                     </div>
                 </div>
             </div>
 
-
+            <!-- Model (Task 1205 only) -->
             @if (ViewBag.TaskNo == "1205")
             {
-                <div class="col-auto">
-                    <select class="form-select form-select-sm" name="ModelName">
+                <div class="fc-group">
+                    <span class="fc-label">Model</span>
+                    <select class="fc-select" name="ModelName" style="min-width:150px;">
                         <option value="@ViewBag.DPModelName" selected>
-                            @(ViewBag.DPModelName == null ? "Please select model.." :
-                      ViewBag.DPModelName == "ALL" ? "ALL MODEL" :
-                      ViewBag.DPModelName)
+                            @(ViewBag.DPModelName == null ? "Select model.." :
+                              ViewBag.DPModelName == "ALL" ? "ALL MODEL" :
+                              ViewBag.DPModelName)
                         </option>
                         <option value="ALL">ALL</option>
                         @foreach (var str in ViewBag.Part_Models)
@@ -250,88 +475,65 @@
                     </select>
                 </div>
             }
+            <div>
+                <!-- Apply -->
+                <button type="submit" class="btn-apply" title="Apply Filters">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
 
-            @*<div class="col-auto">
-            <select class="form-select form-select-sm" name="DPNMarket">
-                <option value="@ViewBag.DPNMarket" selected>
-                    @(ViewBag.DPNMarket == null ? "Please select market.." :
-              ViewBag.DPNMarket == "ALL" ? "ALL Market" :
-              ViewBag.DPNMarket)
-                </option>
-                <option value="ALL">ALL</option>
-                @foreach (var str in ViewBag.Part_Markets)
-                {
-                    <option value="@str.PropertyValue">@str.PropertyValue</option>
-                }
-            </select>
-        </div>*@
-            <input type="hidden" name="DPNMarket" value="ALL" />
-
-            <!-- ✅ Skip Empty Dates Toggle -->
-            <div class="col-auto form-check" style="padding-top:5px;">
-                <input class="form-check-input" type="checkbox"
+                </button>
+            </div>
+            <!-- Skip Empty Dates -->
+            <div class="fc-check-wrap">
+                <input type="checkbox"
                        name="SkipEmptyData" id="skipEmptyData" value="true"
                        @(ViewBag.SkipEmptyData != null && (bool)ViewBag.SkipEmptyData ? "checked" : "") />
-                <label class="form-check-label" for="skipEmptyData">
-                    Skip Empty Dates
-                </label>
-            </div>
-
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary btn-sm px-3">Apply</button>
+                <label for="skipEmptyData">Skip Empty Dates</label>
             </div>
         </form>
-
-
     </div>
 
-    <!-- Chart Container -->
-    <div class="container-fluid mt-3">
-        <div class="row">
-            <div class="col-12">
-                <div class="card p-2 mb-2" style="min-height:650px; width:100%;">
-                    <div id="chart-liveCH1" class="flex-grow-1"></div>
-                </div>
-            </div>
+    <!-- ===== CHART CONTAINER ===== -->
+    <div class="container-fluid mt-2">
+
+        <!-- Chart 1 -->
+        <div class="chart-card mb-3" style="min-height:100px;">
+            <div id="chart-liveCH1" style="width:100%; height:100%; min-height:100px;"></div>
         </div>
-        <input type="hidden" name="PageSelected" value="@ViewBag.Selected" />
+
+        <!-- Chart 2 (optional) -->
         @if (ViewBag.UNIT2 != null)
         {
-            <div class="container-fluid mt-3">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card p-2 mb-2" style="min-height:480px; width:100%;">
-                            <div id="chart-liveCH2" class="flex-grow-1"></div>
-                        </div>
-                    </div>
-                </div>
+            <div class="chart-card mb-3" style="min-height:480px;">
+                <div id="chart-liveCH2" style="width:100%; height:100%; min-height:460px;"></div>
             </div>
         }
 
-        <!-- Data Table -->
-        <div class="container-fluid mt-3">
-            <div class="row">
-                <div class="col-md-auto">
-                    <label>ALL</label>
-                    <table class="table table-bordered" style="width:300px;">
-                        <tbody>
-                            <tr><th style="color:#808080;">STDV</th><td>@ViewBag.STDV</td></tr>
-                            <tr><th style="color:#808080;">LSL</th><td>@ViewBag.LowerLim</td></tr>
-                            <tr><th style="color:#808080;">USL</th><td>@ViewBag.UpperLim</td></tr>
-                            <tr><th style="color:#808080;">AVG</th><td>@ViewBag.AVGX</td></tr>
-                            <tr><th style="color:#808080;">SAMPLES</th><td>@ViewBag.SAMPLES</td></tr>
-                            <tr><th style="color:#808080;">CP</th><td>@ViewBag.CP</td></tr>
-                            <tr><th style="color:#808080;">CPU</th><td>@ViewBag.CPU</td></tr>
-                            <tr><th style="color:#808080;">CPL</th><td>@ViewBag.CPL</td></tr>
-                            <tr><th style="color:#808080;">CPK</th><td>@ViewBag.CPK</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <!-- Stat Table -->
+        <div class="mt-3 mb-4">
+            <div class="stat-label">Summary Statistics</div>
+            <table class="stat-table">
+                <tbody>
+                    <tr><th>STDV</th>    <td>@ViewBag.STDV</td></tr>
+                    <tr><th>LSL</th>     <td>@ViewBag.LowerLim</td></tr>
+                    <tr><th>USL</th>     <td>@ViewBag.UpperLim</td></tr>
+                    <tr><th>AVG</th>     <td>@ViewBag.AVGX</td></tr>
+                    <tr><th>SAMPLES</th> <td>@ViewBag.SAMPLES</td></tr>
+                    <tr><th>CP</th>      <td>@ViewBag.CP</td></tr>
+                    <tr><th>CPU</th>     <td>@ViewBag.CPU</td></tr>
+                    <tr><th>CPL</th>     <td>@ViewBag.CPL</td></tr>
+                    <tr><th>CPK</th>     <td>@ViewBag.CPK</td></tr>
+                </tbody>
+            </table>
         </div>
+
     </div>
 
-    <!-- FusionCharts -->
+    <!-- ===== FUSIONCHARTS ===== -->
     <script src="~/Scripts/fusioncharts/fusioncharts.js"></script>
     <script src="~/Scripts/fusioncharts/fusioncharts.charts.js"></script>
     <script src="~/Scripts/fusioncharts/fusioncharts.theme.fusion.js"></script>
@@ -343,243 +545,220 @@
             creditLabel: false
         });
 
-    FusionCharts.ready(function () {
-        var events = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model));
-        var DataQuery1 = events[0];
-        var LabelS = events[1];
-        var DataLine = events[2];
-        var DataQuery2 = events[3];
+        FusionCharts.ready(function () {
+            var events     = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model));
+            var DataQuery1 = events[0];
+            var LabelS     = events[1];
+            var DataLine   = events[2];
+            var DataQuery2 = events[3];
 
-        let chartOptions1 = {
-            caption: "@ViewBag.Selected @ViewBag.PartDesc (@ViewBag.DropdownS TASK: @ViewBag.TaskNo)",
-            yaxisname: "@ViewBag.UNIT1",
-            xaxisname: "Year: @ViewBag.EndDate.Substring(0,4)",
-            yaxisminvalue: "@(Convert.ToDouble(ViewBag.LowerLim) - Convert.ToDouble(ViewBag.LowerLim)/70)",
-            yaxismaxvalue: "@(Convert.ToDouble(ViewBag.UpperLim) + Convert.ToDouble(ViewBag.UpperLim)/70)",
-            plotToolText: "Result: $yValue @ViewBag.UNIT1 <br> Date Tested: $xValue",
-            valueFontColor: "#000000",
-            valueBgColor: "#FFFFFF",
-            valueBgAlpha: "50",
-            xAxisLabelMode: "CATEGORIES",
-            labelDisplay: "rotate",
-            canvasPadding: "90",
-            slantLabel: "1",
-            theme: "fusion"
-        };
+            // ── Chart 1 ──
+            var chartOptions1 = {
+                caption:        "@ViewBag.Selected @ViewBag.PartDesc (@ViewBag.DropdownS  TASK: @ViewBag.TaskNo)",
+                yaxisname:      "@ViewBag.UNIT1",
+                xaxisname:      "Year: @ViewBag.EndDate.Substring(0,4)",
+                yaxisminvalue:  "@(Convert.ToDouble(ViewBag.LowerLim) - Convert.ToDouble(ViewBag.LowerLim)/70)",
+                yaxismaxvalue:  "@(Convert.ToDouble(ViewBag.UpperLim) + Convert.ToDouble(ViewBag.UpperLim)/70)",
+                plotToolText:   "Result: $yValue @ViewBag.UNIT1 <br> Date Tested: $xValue",
+                valueFontColor: "#000000",
+                valueBgColor:   "#FFFFFF",
+                valueBgAlpha:   "50",
+                xAxisLabelMode: "CATEGORIES",
+                labelDisplay:   "rotate",
+                canvasPadding:  "90",
+                slantLabel:     "1",
+                theme:          "fusion"
+            };
 
-        // ✅ Assign chart reference directly
-        window.chartMainRef = new FusionCharts({
-            type: 'zoomscatter',
-            renderAt: 'chart-liveCH1',
-            width: '100%',
-            height: '100%',
-            showChartLoadingMessage: false,
-            dataFormat: 'json',
-            dataSource: {
-                chart: chartOptions1,
-                categories: [{ category: LabelS }],
-                dataset: [
-                    {
-                        seriesname: "@ViewBag.PartDesc",
-                        color: "0075c2",
-                        anchorsides: "3",
-                        anchorradius: "3",
-                        anchorbgcolor: "0075c2",
-                        anchorbordercolor: "0075c2",
-                        data: DataQuery1
-                    },
-                    {
-                        drawline: "1",
-                        seriesname: "Mean connect line",
-                        color: "009900",
-                        anchorsides: "3",
-                        anchorradius: "4",
-                        anchorbgcolor: "D5FFD5",
-                        anchorbordercolor: "009900",
-                        data: DataLine
-                    }
-                ],
-                trendlines: [
-                    {
+            window.chartMainRef = new FusionCharts({
+                type:                   'zoomscatter',
+                renderAt:               'chart-liveCH1',
+                width:                  '100%',
+                height:                 '100%',
+                showChartLoadingMessage: false,
+                dataFormat:             'json',
+                dataSource: {
+                    chart:      chartOptions1,
+                    categories: [{ category: LabelS }],
+                    dataset: [
+                        {
+                            seriesname:        "@ViewBag.PartDesc",
+                            color:             "0075c2",
+                            anchorsides:       "3",
+                            anchorradius:      "3",
+                            anchorbgcolor:     "0075c2",
+                            anchorbordercolor: "0075c2",
+                            data:              DataQuery1
+                        },
+                        {
+                            drawline:          "1",
+                            seriesname:        "Mean connect line",
+                            color:             "009900",
+                            anchorsides:       "3",
+                            anchorradius:      "4",
+                            anchorbgcolor:     "D5FFD5",
+                            anchorbordercolor: "009900",
+                            data:              DataLine
+                        }
+                    ],
+                    trendlines: [{
                         line: [
                             { startvalue: "@ViewBag.LowerLim", displayvalue: "Lower @ViewBag.LowerLim", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "5" },
                             { startvalue: "@ViewBag.UpperLim", displayvalue: "Upper @ViewBag.UpperLim", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "5" }
                         ]
+                    }]
+                }
+            });
+            window.chartMainRef.render();
+
+            // ── Chart 2 (optional) ──
+            if (DataQuery2 && DataQuery2 !== 'null' && DataQuery2 !== 'undefined') {
+                var chartOptions2 = {
+                    caption:        "Sub: @ViewBag.PartDesc @ViewBag.EndDate.Substring(0,4)",
+                    yaxisname:      "@ViewBag.UNIT2",
+                    xaxisname:      "Year: @ViewBag.EndDate.Substring(0,4)",
+                    yaxisminvalue:  "-2",
+                    yaxismaxvalue:  "2",
+                    plotToolText:   "Result: $yValue @ViewBag.UNIT2 <br> Date Tested: $xValue",
+                    valueFontColor: "#000000",
+                    valueBgColor:   "#FFFFFF",
+                    valueBgAlpha:   "50",
+                    xAxisLabelMode: "CATEGORIES",
+                    labelDisplay:   "rotate",
+                    canvasPadding:  "90",
+                    slantLabel:     "1",
+                    theme:          "fusion"
+                };
+
+                new FusionCharts({
+                    type:                   'zoomscatter',
+                    renderAt:               'chart-liveCH2',
+                    width:                  '100%',
+                    height:                 '100%',
+                    showChartLoadingMessage: false,
+                    dataFormat:             'json',
+                    dataSource: {
+                        chart:      chartOptions2,
+                        categories: [{ category: LabelS }],
+                        dataset: [{
+                            seriesname:        "@ViewBag.UNIT2",
+                            color:             "0075c2",
+                            anchorsides:       "2",
+                            anchorradius:      "2",
+                            anchorbgcolor:     "0075c2",
+                            anchorbordercolor: "0075c2",
+                            data:              DataQuery2
+                        }],
+                        trendlines: [{
+                            line: [
+                                { startvalue: "@ViewBag.LowerLim2",  displayvalue: "Lower @ViewBag.LowerLim2",  linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "2" },
+                                { startvalue: "@ViewBag.UpperLim2",  displayvalue: "Upper @ViewBag.UpperLim2",  linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "2" }
+                            ]
+                        }]
                     }
-                ]
+                }).render();
             }
         });
-        window.chartMainRef.render();
 
-        // CH2 remains unchanged
-        if (DataQuery2 && DataQuery2 !== 'null' && DataQuery2 !== 'undefined') {
-            let chartOptions2 = {
-                caption: "Sub: @ViewBag.PartDesc @ViewBag.EndDate.Substring(0,4)",
-                yaxisname: "@ViewBag.UNIT2",
-                xaxisname: "Year: @ViewBag.EndDate.Substring(0,4)",
-                yaxisminvalue: "-2",
-                yaxismaxvalue: "2",
-                plotToolText: "Result: $yValue @ViewBag.UNIT2 <br> Date Tested: $xValue",
-                valueFontColor: "#000000",
-                valueBgColor: "#FFFFFF",
-                valueBgAlpha: "50",
-                xAxisLabelMode: "CATEGORIES",
-                labelDisplay: "rotate",
-                canvasPadding: "90",
-                slantLabel: "1",
-                theme: "fusion"
-            };
-
-            new FusionCharts({
-                type: 'zoomscatter',
-                renderAt: 'chart-liveCH2',
-                width: '100%',
-                height: '100%',
-                showChartLoadingMessage: false,
-                dataFormat: 'json',
-                dataSource: {
-                    chart: chartOptions2,
-                    categories: [{ category: LabelS }],
-                    dataset: [{
-                        seriesname: "@ViewBag.UNIT2",
-                        color: "0075c2",
-                        anchorsides: "2",
-                        anchorradius: "2",
-                        anchorbgcolor: "0075c2",
-                        anchorbordercolor: "0075c2",
-                        data: DataQuery2
-                    }],
-                    trendlines: [
-                        {
-                            line: [
-                                { startvalue: "@ViewBag.LowerLim2", displayvalue: "Lower @ViewBag.LowerLim2", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "2" },
-                                { startvalue: "@ViewBag.UpperLim2", displayvalue: "Upper @ViewBag.UpperLim2", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1", dashgap: "2" }
-                            ]
-                        }
-                    ]
-                }
-            }).render();
-        }
-    });
-
-    // ✅ Manual Trendline Functions
+        // ===== MANUAL TRENDLINE FUNCTIONS =====
         function applyManualTrend() {
             if (!window.chartMainRef) return;
+            var lower = document.getElementById('manualLower').value;
+            var upper = document.getElementById('manualUpper').value;
+            var lines = [];
 
-            const lower = document.getElementById('manualLower').value;
-            const upper = document.getElementById('manualUpper').value;
-
-            const manualLines = [];
-            if (lower) manualLines.push({
-                startvalue: lower,
+            if (lower) lines.push({
+                startvalue:   lower,
                 displayvalue: "Manual Lower " + lower,
-                linethickness: "2",
-                color: "0075c2", // Blue
-                dashed: "1",
-                valueonright: "1"
+                linethickness:"2", color:"0075c2", dashed:"1", valueonright:"1"
             });
-            if (upper) manualLines.push({
-                startvalue: upper,
+            if (upper) lines.push({
+                startvalue:   upper,
                 displayvalue: "Manual Upper " + upper,
-                linethickness: "2",
-                color: "0075c2", // Blue
-                dashed: "1",
-                valueonright: "1"
+                linethickness:"2", color:"0075c2", dashed:"1", valueonright:"1"
             });
+            if (!lines.length) return;
 
-            if (manualLines.length === 0) return;
-
-            // Get current chart JSON
-            const data = window.chartMainRef.getJSONData();
-
-            // ✅ Ensure trendlines[0] exists
-            if (!data.trendlines || data.trendlines.length === 0) {
+            var data = window.chartMainRef.getJSONData();
+            if (!data.trendlines || !data.trendlines.length) {
                 data.trendlines = [{ line: [] }];
             } else if (!data.trendlines[0].line) {
                 data.trendlines[0].line = [];
             }
-
-            // Merge manual lines into existing trendlines[0].line
-            data.trendlines[0].line = data.trendlines[0].line.concat(manualLines);
-
+            data.trendlines[0].line = data.trendlines[0].line.concat(lines);
             window.chartMainRef.setJSONData(data);
         }
-
 
         function removeAllTrendlines() {
             if (!window.chartMainRef) return;
-
-            const data = window.chartMainRef.getJSONData();
-
-            // Remove all trendlines
+            var data = window.chartMainRef.getJSONData();
             data.trendlines = [];
-
             window.chartMainRef.setJSONData(data);
-
-            // Clear manual input boxes
-            document.getElementById('manualLower').value = "";
-            document.getElementById('manualUpper').value = "";
+            document.getElementById('manualLower').value = '';
+            document.getElementById('manualUpper').value = '';
         }
 
-
-    function resetTrend() {
-        if (!window.chartMainRef) return;
-
-        const data = window.chartMainRef.getJSONData();
-        data.trendlines = [{
-            line: [
-                { startvalue: "@ViewBag.LowerLim", displayvalue: "Lower @ViewBag.LowerLim", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1" },
-                { startvalue: "@ViewBag.UpperLim", displayvalue: "Upper @ViewBag.UpperLim", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1" }
-            ]
-        }];
-        window.chartMainRef.setJSONData(data);
-
-        document.getElementById('manualLower').value = "";
-        document.getElementById('manualUpper').value = "";
+        function resetTrend() {
+            if (!window.chartMainRef) return;
+            var data = window.chartMainRef.getJSONData();
+            data.trendlines = [{
+                line: [
+                    { startvalue: "@ViewBag.LowerLim", displayvalue: "Lower @ViewBag.LowerLim", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1" },
+                    { startvalue: "@ViewBag.UpperLim", displayvalue: "Upper @ViewBag.UpperLim", linethickness: "2", color: "FF0000", dashed: "1", valueonright: "1" }
+                ]
+            }];
+            window.chartMainRef.setJSONData(data);
+            document.getElementById('manualLower').value = '';
+            document.getElementById('manualUpper').value = '';
         }
 
-
-        // ========== Searchable Dropdown Logic ==========
+        // ===== SEARCHABLE DROPDOWN =====
         (function () {
-            // Build options array from the hidden select
-            const hiddenSelect = document.getElementById('dropDownSHidden');
-            const searchInput = document.getElementById('partSearch');
-            const listDiv = document.getElementById('dropdownList');
+            var hiddenSelect = document.getElementById('dropDownSHidden');
+            var searchInput  = document.getElementById('partSearch');
+            var listDiv      = document.getElementById('dropdownList');
+            var kbdIndex     = -1;
 
-            // Collect all options
-            const allOptions = Array.from(hiddenSelect.options).map(opt => ({
-                value: opt.value,
-                text: opt.text.trim(),
-                style: opt.getAttribute('style') || '',
-                cls: opt.getAttribute('style') && opt.getAttribute('style').includes('fff3cd') ? 'highlight-bom'
-                    : opt.getAttribute('style') && opt.getAttribute('style').includes('d4edda') ? 'highlight-map'
-                        : ''
-            }));
+            // Build options array from hidden select
+            var allOptions = Array.from(hiddenSelect.options).map(function (opt) {
+                var s = opt.getAttribute('style') || '';
+                return {
+                    value: opt.value,
+                    text:  opt.text.trim(),
+                    cls:   s.includes('fff3cd') ? 'highlight-bom'
+                         : s.includes('d4edda') ? 'highlight-map'
+                         : ''
+                };
+            });
 
-            // Set input placeholder to current selected text
-            const selectedOpt = hiddenSelect.options[0];
-            if (selectedOpt) searchInput.placeholder = selectedOpt.text.trim();
+            // Show current selection as placeholder
+            var sel = hiddenSelect.options[0];
+            if (sel) searchInput.placeholder = sel.text.trim();
 
             function renderList(filter) {
                 listDiv.innerHTML = '';
-                const lower = filter.toLowerCase();
-                const filtered = allOptions.filter(o =>
-                    !filter || o.text.toLowerCase().includes(lower) || o.value.toLowerCase().includes(lower)
-                );
+                kbdIndex = -1;
+                var q = (filter || '').toLowerCase();
 
-                if (filtered.length === 0) {
+                var filtered = allOptions.filter(function (o) {
+                    return !q || o.text.toLowerCase().includes(q) || o.value.toLowerCase().includes(q);
+                });
+
+                if (!filtered.length) {
                     listDiv.innerHTML = '<div class="no-results">No results found</div>';
                     return;
                 }
 
-                filtered.forEach(opt => {
-                    const div = document.createElement('div');
+                filtered.forEach(function (opt, i) {
+                    var div = document.createElement('div');
                     div.className = 'dropdown-item-custom ' + opt.cls;
-                    if (opt.value === hiddenSelect.value) div.classList.add('selected');
+                    if (opt.value === hiddenSelect.value) div.classList.add('kbd-active');
                     div.textContent = opt.text;
                     div.title = opt.text;
+                    div.dataset.idx = i;
+
                     div.addEventListener('mousedown', function (e) {
-                        e.preventDefault(); // prevent blur before click
+                        e.preventDefault();
                         selectOption(opt);
                     });
                     listDiv.appendChild(div);
@@ -587,16 +766,28 @@
             }
 
             function selectOption(opt) {
-                // Update hidden select value
                 hiddenSelect.value = opt.value;
-                // If no match, add as first option
                 if (hiddenSelect.value !== opt.value) {
-                    const newOpt = new Option(opt.text, opt.value, true, true);
-                    hiddenSelect.prepend(newOpt);
+                    var o = new Option(opt.text, opt.value, true, true);
+                    hiddenSelect.prepend(o);
                     hiddenSelect.value = opt.value;
                 }
                 searchInput.value = opt.text;
                 listDiv.style.display = 'none';
+            }
+
+            function getItems() {
+                return Array.from(listDiv.querySelectorAll('.dropdown-item-custom'));
+            }
+
+            function setKbd(idx) {
+                var items = getItems();
+                items.forEach(function (el) { el.classList.remove('kbd-active'); });
+                if (idx >= 0 && idx < items.length) {
+                    items[idx].classList.add('kbd-active');
+                    items[idx].scrollIntoView({ block: 'nearest' });
+                }
+                kbdIndex = idx;
             }
 
             window.showDropdownList = function () {
@@ -609,38 +800,27 @@
                 listDiv.style.display = 'block';
             };
 
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function (e) {
-                if (!document.getElementById('searchableDropdown').contains(e.target)) {
+            searchInput.addEventListener('keydown', function (e) {
+                var items = getItems();
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setKbd(Math.min(kbdIndex + 1, items.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setKbd(Math.max(kbdIndex - 1, 0));
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (kbdIndex >= 0 && items[kbdIndex]) {
+                        items[kbdIndex].dispatchEvent(new Event('mousedown'));
+                    }
+                } else if (e.key === 'Escape') {
                     listDiv.style.display = 'none';
                 }
             });
 
-            // Allow keyboard navigation
-            searchInput.addEventListener('keydown', function (e) {
-                const items = listDiv.querySelectorAll('.dropdown-item-custom');
-                const current = listDiv.querySelector('.selected');
-                let idx = Array.from(items).indexOf(current);
-
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    idx = Math.min(idx + 1, items.length - 1);
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    idx = Math.max(idx - 1, 0);
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (current) current.dispatchEvent(new Event('mousedown'));
-                    return;
-                } else if (e.key === 'Escape') {
+            document.addEventListener('click', function (e) {
+                if (!document.getElementById('searchableDropdown').contains(e.target)) {
                     listDiv.style.display = 'none';
-                    return;
-                }
-
-                items.forEach(i => i.classList.remove('selected'));
-                if (items[idx]) {
-                    items[idx].classList.add('selected');
-                    items[idx].scrollIntoView({ block: 'nearest' });
                 }
             });
         })();
